@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#2563eb">
+<title>打字练习 · 学生端</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- ============================ 顶栏 ============================ -->
+<header class="topbar" id="topbar">
+  <div class="tb-left">
+    <div class="tb-logo"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.4"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg></div>
+    <div class="tb-title">打字练习</div>
+  </div>
+  <div class="tb-right">
+    <span class="chip" id="chip-online" title="当前在线人数"><i class="dot"></i><b id="online-num">0</b> 人在线</span>
+    <span class="chip user" id="chip-user" hidden>
+      <span id="user-text"></span>
+      <button class="link-btn" id="btn-switch">换同学</button>
+    </span>
+    <button class="link-btn plain" id="btn-top-rank" hidden>排行榜</button>
+  </div>
+</header>
+
+<!-- ============================ 一、登录 ============================ -->
+<main class="view" id="view-login">
+  <div class="login-wrap">
+    <div class="login-head">
+      <div class="login-badge">信息技术 · 键盘技能</div>
+      <h1>开始你的打字练习</h1>
+      <p>选学校、选班级、写上名字。<b>每次打开都要重新登记</b> —— 机房一台电脑多人共用，不会把上一位同学留在页面上。</p>
+    </div>
+
+    <div class="login-card">
+      <div class="login-keep" id="login-keep" hidden></div>
+
+      <div class="step-row">
+        <div class="step-dot on">1</div><div class="step-line"></div>
+        <div class="step-dot">2</div><div class="step-line"></div>
+        <div class="step-dot">3</div>
+      </div>
+
+      <label class="fld">
+        <span class="fld-k">① 你所在的学校</span>
+        <select id="sel-school"><option value="">请选择学校</option></select>
+      </label>
+
+      <label class="fld">
+        <span class="fld-k">② 你所在的班级</span>
+        <select id="sel-class" disabled><option value="">请先选择学校</option></select>
+      </label>
+
+      <label class="fld">
+        <span class="fld-k">③ 你的姓名</span>
+        <input id="inp-name" type="text" maxlength="10" placeholder="例如：李小明" autocomplete="off" spellcheck="false" disabled>
+      </label>
+
+      <div class="login-err" id="login-err"></div>
+
+      <button class="btn-primary" id="btn-login" disabled>进入练习大厅 →</button>
+
+      <p class="login-tip">姓名请写全名，老师要靠它在排行榜上认出你。多人共用一台电脑，练完点右上角「换同学」。</p>
+    </div>
+
+    <div class="login-foot">
+      <span>本课练习结束后，成绩会自动保存，不需要抄写。</span>
+    </div>
+  </div>
+</main>
+
+<!-- ============================ 二、大厅 ============================ -->
+<main class="view hidden" id="view-hall">
+  <div class="hall-wrap">
+    <div class="hall-head">
+      <div>
+        <h2 class="hall-hi" id="hall-hi">你好</h2>
+        <p class="hall-sub">选一个模式开始练习 · 准确率到 60% 才会上榜</p>
+      </div>
+      <div class="hall-unified hidden" id="hall-unified">
+        <span class="badge-live">统一测评进行中</span>
+        <span id="hall-unified-text"></span>
+      </div>
+    </div>
+
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="key" data-go="key">
+        <div class="mc-ico" style="--c:#2563eb;--cbg:#eff5ff">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2.2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M8 14h8"/></svg>
+        </div>
+        <h3>键位闯关</h3>
+        <p>跟着提示一个键一个键练，屏幕告诉你是哪根手指。五关递进。</p>
+        <div class="mc-meta" data-meta="key">还没练过</div>
+      </button>
+
+      <button class="mode-card" data-mode="falling" data-go="falling">
+        <div class="mc-ico" style="--c:#d97706;--cbg:#fff8ec">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M7.5 8.5 12 13l4.5-4.5"/><rect x="4" y="17" width="16" height="4" rx="1.4"/></svg>
+        </div>
+        <h3>落字游戏</h3>
+        <p>字母从天上掉下来，按对键把它打掉。<b>3 条命</b>，越打越快。</p>
+        <div class="mc-meta" data-meta="falling">还没练过</div>
+      </button>
+
+      <button class="mode-card" data-mode="speed" data-go="speed">
+        <div class="mc-ico" style="--c:#0f9d58;--cbg:#edfaf3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="8"/><path d="M12 13.5V9M9 2.5h6"/></svg>
+        </div>
+        <h3>速度练习</h3>
+        <p>给你一段文字，限时打完。实时显示 <b>CPM</b> 和准确率，正式成绩来源。</p>
+        <div class="mc-meta" data-meta="speed">还没练过</div>
+      </button>
+
+      <button class="mode-card" data-mode="wordrush" data-go="wordrush">
+        <div class="mc-ico" style="--c:#7c3aed;--cbg:#f5f0ff">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5 9-12h-6.5z"/></svg>
+        </div>
+        <h3>单词冲刺</h3>
+        <p>60 秒，能打对多少个英文单词？打错不换词，手快也要手准。</p>
+        <div class="mc-meta" data-meta="wordrush">还没练过</div>
+      </button>
+
+      <button class="mode-card" data-mode="zh" data-go="zh">
+        <div class="mc-ico" style="--c:#dc2626;--cbg:#fef2f2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M9 5v14M4.5 19c2.5-3 4-6 4.5-9M13.5 12.5H21M17 8.5v4M14 19l3-6.5 3 6.5"/></svg>
+        </div>
+        <h3>中文跟打</h3>
+        <p>用中文输入法照着打短文，打错的字会变红。<b>字/分钟</b>计入中文榜。</p>
+        <div class="mc-meta" data-meta="zh">还没练过</div>
+      </button>
+    </div>
+
+    <div class="hall-bottom">
+      <div class="my-card">
+        <div class="mc-h">我的成绩</div>
+        <div class="my-grid">
+          <div class="my-item"><b id="my-score">0</b><span>总分</span></div>
+          <div class="my-item"><b id="my-cpm">—</b><span>最高 CPM</span></div>
+          <div class="my-item"><b id="my-acc">—</b><span>最高准确率</span></div>
+          <div class="my-item"><b id="my-rank">—</b><span>班级名次</span></div>
+        </div>
+        <p class="my-tip" id="my-tip">从键位闯关开始，先把手指放对位置。</p>
+      </div>
+
+      <div class="rank-mini">
+        <div class="rm-h">
+          <span>班级排行榜</span>
+          <button class="link-btn" data-go="rank">查看全部 →</button>
+        </div>
+        <ol class="rm-list" id="rank-mini-list"></ol>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ============================ 三、练习 ============================ -->
+<main class="view hidden" id="view-practice">
+  <div class="prac-top">
+    <button class="btn-back" id="btn-back">← 返回</button>
+    <div class="prac-title" id="prac-title">练习</div>
+    <div class="prac-right" id="prac-right"></div>
+  </div>
+  <div class="prac-body" id="prac-body"></div>
+</main>
+
+<!-- ============================ 四、排行榜 ============================ -->
+<main class="view hidden" id="view-rank">
+  <div class="rank-wrap">
+    <div class="rank-head">
+      <button class="btn-back" data-go="hall">← 返回</button>
+      <h2>班级排行榜</h2>
+      <div class="rank-tabs" id="rank-tabs">
+        <button class="rt on" data-tab="total">总分榜</button>
+        <button class="rt" data-tab="speed">速度榜</button>
+        <button class="rt" data-tab="zh">中文榜</button>
+        <button class="rt" data-tab="acc">准确率榜</button>
+        <button class="rt" data-tab="react">手速榜</button>
+      </div>
+    </div>
+    <div class="rank-body">
+      <table class="rank-tbl" id="rank-tbl">
+        <thead><tr>
+          <th>名次</th><th>姓名</th><th>班级</th>
+          <th id="th-main">总分</th><th>最高 CPM</th><th>中文字/分</th>
+          <th>准确率</th><th>键位关</th>
+        </tr></thead>
+        <tbody id="rank-tbody"></tbody>
+      </table>
+      <div class="rank-empty" id="rank-empty" hidden>这个榜单还没有人上榜。准确率达到 60% 就会出现在这里。</div>
+    </div>
+    <p class="rank-note">
+      总分 = 键位闯关 + 速度练习 + 单词冲刺 + 中文跟打 四项最高分之和。同一模式只算最高一次，重复练同一段不会加分。
+      准确率低于 60% 的成绩不计入排行榜；中文按「字/分钟」单独排中文榜，不与英文 CPM 混排。
+    </p>
+  </div>
+</main>
+
+<!-- ============================ 成绩单弹层 ============================ -->
+<div class="modal" id="modal-result">
+  <div class="modal-card">
+    <div class="mr-head">
+      <div class="mr-badge" id="mr-badge">成绩单</div>
+      <h3 id="mr-title">速度练习 · 2 分钟</h3>
+    </div>
+    <div class="mr-main">
+      <div class="mr-big"><b id="mr-score">0</b><span>得分</span></div>
+      <div class="mr-side">
+        <div class="mr-row"><span id="mr-cpm-k">速度 CPM</span><b id="mr-cpm">0</b></div>
+        <div class="mr-row"><span>准确率</span><b id="mr-acc">0%</b></div>
+        <div class="mr-row"><span>正确 / 错误</span><b id="mr-cw">0 / 0</b></div>
+        <div class="mr-row"><span>班级名次</span><b id="mr-rank">—</b></div>
+      </div>
+    </div>
+    <div class="mr-note" id="mr-note"></div>
+    <div class="mr-btns">
+      <button class="btn-ghost" id="mr-again">再来一次</button>
+      <button class="btn-ghost" id="mr-switch">换个同学</button>
+      <button class="btn-primary" id="mr-done">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 轻提示 -->
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="rank.js"></script>
+<script src="core.js"></script>
+<script src="keydrill.js"></script>
+<script src="falling.js"></script>
+<script src="speed.js"></script>
+<script src="wordrush.js"></script>
+<script src="chinese.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

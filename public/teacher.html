@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>打字练习 · 教师端</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="teacher.css">
+</head>
+<body class="tch">
+
+<header class="tb2">
+  <div class="tb2-l">
+    <div class="tb2-logo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.4"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg></div>
+    <div>
+      <div class="tb2-t">打字练习 · 教师端</div>
+      <div class="tb2-s" id="tb2-sub">全县中小学生键盘技能训练</div>
+    </div>
+  </div>
+  <div class="tb2-r">
+    <span class="chip"><i class="dot"></i><b id="t-online">0</b> 人在线</span>
+    <span class="chip"><b id="t-records">0</b> 条成绩</span>
+    <span class="chip role admin" id="chip-role" hidden><b id="role-text">普通教师</b></span>
+    <button class="link-btn" id="btn-logout" hidden>退出</button>
+    <a class="btn-blue btn-sm" href="/screen" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center">打开大屏看板 ↗</a>
+  </div>
+</header>
+
+<!-- ==================== 登录门 ==================== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-badge">教师端</div>
+    <h1>请输入访问码</h1>
+    <p class="gate-sub">超级管理员可以导入 / 修改学校班级名单；普通教师账号只能使用课堂功能与查看数据。</p>
+    <input type="password" id="gate-code" placeholder="访问码" autocomplete="off" spellcheck="false">
+    <div class="gate-err" id="gate-err"></div>
+    <button class="btn-blue" id="gate-go">进入教师端</button>
+    <p class="gate-tip">访问码由服务端启动时打印在命令行窗口；要修改请用 DB Browser for SQLite 打开 <code>data/db.sqlite</code>，
+      改 <code>meta</code> 表里 <code>config</code> 这条记录的 <code>auth</code> 字段，改完重启服务。</p>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button class="tab on" data-panel="overview">课堂总览</button>
+  <button class="tab" data-panel="board">排行榜</button>
+  <button class="tab" data-panel="analysis">学情分析</button>
+  <button class="tab" data-panel="manage">课堂管理</button>
+</nav>
+
+<main class="tmain">
+
+  <!-- ==================== 总览 ==================== -->
+  <section class="panel" id="panel-overview">
+    <div class="kpis" id="kpis">
+      <div class="kpi">
+        <div class="kpi-k">在线学生</div>
+        <div class="kpi-v"><b id="k-online">0</b><span class="kpi-u">人</span></div>
+        <div class="kpi-x" id="k-online-x">等待学生登录…</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-k">平均速度</div>
+        <div class="kpi-v"><b id="k-cpm">0</b><span class="kpi-u">CPM</span></div>
+        <div class="kpi-x" id="k-cpm-x">字符 / 分钟</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-k">平均准确率</div>
+        <div class="kpi-v"><b id="k-acc">0</b><span class="kpi-u">%</span></div>
+        <div class="kpi-x" id="k-acc-x">达标线 60%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-k">达标学生</div>
+        <div class="kpi-v"><b id="k-qual">0</b><span class="kpi-u">人</span></div>
+        <div class="kpi-x" id="k-qual-x">准确率 ≥ 60%</div>
+      </div>
+    </div>
+
+    <div class="ov-grid">
+      <div class="ov-main">
+        <div class="sec-h">
+          <span>实时进度墙</span>
+          <div class="sec-tools">
+            <input class="mini-inp" id="ov-filter" placeholder="搜索姓名 / 班级" autocomplete="off">
+            <label class="mini-chk"><input type="checkbox" id="ov-only-online" checked> 只看在线</label>
+          </div>
+        </div>
+        <div class="wall" id="wall"></div>
+        <div class="wall-empty" id="wall-empty">还没有学生进入练习。学生用手机或机房电脑打开入口地址，选择学校班级、填上姓名即可。</div>
+      </div>
+
+      <aside class="ov-side">
+        <div class="sec-h"><span>课堂实时动态</span></div>
+        <div class="feed" id="feed"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ==================== 排行榜 ==================== -->
+  <section class="panel hidden" id="panel-board">
+    <div class="sec-h">
+      <span>排行榜</span>
+      <div class="sec-tools">
+        <div class="seg" id="bd-kinds">
+          <button class="on" data-k="total">总分榜</button>
+          <button data-k="speed">速度榜</button>
+          <button data-k="zh">中文榜</button>
+          <button data-k="acc">准确率榜</button>
+          <button data-k="react">手速榜</button>
+          <button data-k="progress">进步榜</button>
+        </div>
+        <select class="mini-sel" id="bd-scope"><option value="">全部（本校）</option></select>
+        <select class="mini-sel" id="bd-school"><option value="">全部学校</option></select>
+      </div>
+    </div>
+    <div class="bd-wrap">
+      <table class="bd-tbl" id="bd-tbl">
+        <thead id="bd-head"></thead>
+        <tbody id="bd-body"></tbody>
+      </table>
+      <div class="bd-empty" id="bd-empty" hidden>该范围下还没有达标成绩。</div>
+    </div>
+    <p class="bd-note">
+      总分 = 键位闯关最高分 + 速度练习最高分 + 单词冲刺最高分。同一模式只计最高一次，重复练同一段不会累加。
+      准确率低于 60% 的成绩不进榜（防"瞎打求快"）。
+    </p>
+  </section>
+
+  <!-- ==================== 学情分析 ==================== -->
+  <section class="panel hidden" id="panel-analysis">
+    <div class="sec-h">
+      <span>学情分析</span>
+      <div class="sec-tools">
+        <select class="mini-sel" id="an-school"><option value="">全部学校</option></select>
+        <select class="mini-sel" id="an-class"><option value="">全部班级</option></select>
+        <span class="an-scanned" id="an-scanned">已分析 0 份成绩</span>
+      </div>
+    </div>
+
+    <div class="an-grid">
+      <div class="an-card an-kb">
+        <div class="an-h">错键热力图 <span>颜色越深 = 该键错误率越高</span></div>
+        <div id="an-keyboard"></div>
+        <div class="an-legend">
+          <span><i style="background:#eef2f7"></i>0%</span>
+          <span><i style="background:#fff1f0"></i>&lt;2%</span>
+          <span><i style="background:#fee2e2"></i>2–4%</span>
+          <span><i style="background:#fca5a5"></i>4–6%</span>
+          <span><i style="background:#f87171"></i>6–9%</span>
+          <span><i style="background:#dc2626"></i>&gt;9%</span>
+        </div>
+      </div>
+
+      <div class="an-card">
+        <div class="an-h">错误最多的键 <span>Top 10</span></div>
+        <div class="an-top" id="an-top"></div>
+      </div>
+
+      <div class="an-card">
+        <div class="an-h">最常见的混淆 <span>目标键 → 实际打成</span></div>
+        <div class="an-conf" id="an-conf"></div>
+      </div>
+
+      <div class="an-card">
+        <div class="an-h">操作建议 <span>根据错键自动生成</span></div>
+        <div class="an-advice" id="an-advice"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 课堂管理 ==================== -->
+  <section class="panel hidden" id="panel-manage">
+    <div class="mg-grid">
+
+      <div class="an-card">
+        <div class="an-h">统一测评</div>
+        <p class="mg-p">开启后，全班学生的练习参数被锁定为下面这套，成绩标记为"统一测评"。日常自由练习不受影响。</p>
+        <div class="mg-row">
+          <label class="mg-chk"><input type="checkbox" id="u-on"> 开启统一测评</label>
+        </div>
+        <div class="mg-row">
+          <span class="mg-l">模式</span>
+          <select class="mini-sel" id="u-mode">
+            <option value="speed">速度练习（英文/字符，CPM）</option>
+            <option value="zh">中文跟打（字/分钟）</option>
+          </select>
+        </div>
+        <div class="mg-row">
+          <span class="mg-l">内容</span>
+          <select class="mini-sel" id="u-level"></select>
+        </div>
+        <div class="mg-row">
+          <span class="mg-l">时长</span>
+          <select class="mini-sel" id="u-sec">
+            <option value="60">1 分钟</option>
+            <option value="120">2 分钟</option>
+            <option value="180">3 分钟</option>
+            <option value="300">5 分钟</option>
+          </select>
+        </div>
+        <button class="btn-blue btn-sm" id="u-save">保存设置</button>
+      </div>
+
+      <div class="an-card">
+        <div class="an-h">学生入口</div>
+        <p class="mg-p">把二维码投到大屏，或把下面这个地址写在黑板上。学生机需要和本机在同一局域网。</p>
+        <div class="qr-box" id="qr-box"></div>
+        <div class="mg-url" id="mg-url">—</div>
+        <div class="mg-links" id="mg-links"></div>
+      </div>
+
+      <div class="an-card an-wide" id="mg-card">
+        <div class="an-h">学校与班级名单 <span>每行一所学校，格式：学校名|班级1,班级2,班级3</span></div>
+        <p class="mg-p">这是登录页下拉框的数据来源。改成你所在县的真实名单，学生登录时就不用打字，不会输错。</p>
+        <textarea class="mg-ta" id="mg-ta" spellcheck="false"></textarea>
+        <div class="mg-row" style="margin-top:12px">
+          <button class="btn-blue btn-sm" id="mg-save">保存名单</button>
+          <button class="btn-ghost btn-sm" id="mg-reload">重新载入</button>
+          <span class="mg-hint" id="mg-hint"></span>
+        </div>
+      </div>
+
+      <!-- 只有超级管理员看得见 -->
+      <div class="an-card an-wide" id="imp-card" hidden>
+        <div class="an-h">从 Excel 导入名单 <span>支持 .xlsx / .csv，读取第一张工作表</span></div>
+        <p class="mg-p">
+          把名单整理成两列：<b>第一列学校名，第二列起班级名</b>（一行一个班，学校名可以合并单元格；
+          也可以一所学校占一行、后面几列都写班级）。有表头也能识别，学校名会自动去重合并。
+        </p>
+        <div class="imp-row">
+          <button class="btn-blue btn-sm" id="imp-pick">选择 Excel 文件</button>
+          <button class="btn-ghost btn-sm" id="imp-tpl">下载模板</button>
+          <input type="file" id="imp-file" accept=".xlsx,.xlsm,.csv,.txt" hidden>
+          <span class="mg-hint" id="imp-name"></span>
+        </div>
+        <div class="imp-prev" id="imp-prev" hidden></div>
+        <div class="mg-row" id="imp-actions" hidden>
+          <label class="mg-chk"><input type="radio" name="imp-mode" value="merge" checked> 追加合并（保留原有名单）</label>
+          <label class="mg-chk"><input type="radio" name="imp-mode" value="replace"> 覆盖替换（清空后导入）</label>
+          <button class="btn-blue btn-sm" id="imp-do">确认导入</button>
+          <button class="btn-ghost btn-sm" id="imp-cancel">取消</button>
+        </div>
+      </div>
+
+      <!-- 练习文本库：只有超级管理员能改 -->
+      <div class="an-card an-wide" id="mat-card" hidden>
+        <div class="an-h">练习文本库 <span>给「中文跟打」用的文章，学生端下拉框里就能选</span></div>
+        <p class="mg-p">
+          粘贴一段中文（也可以上传 <code>.txt</code>），保存后学生端「中文跟打」里立刻可选。建议 100—800 字，
+          标点用中文标点；回车和多余空格会被自动压掉，混排的英文也照常打。
+        </p>
+        <div class="mat-form">
+          <div class="mg-row">
+            <input class="mini-inp" id="mat-title" placeholder="标题，例如：我们的校园" maxlength="30" style="width:230px">
+            <span class="mg-l">难度</span>
+            <select class="mini-sel" id="mat-level">
+              <option value="1">简单（系数 1.00）</option>
+              <option value="2" selected>中等（1.10）</option>
+              <option value="3">较难（1.20）</option>
+            </select>
+            <button class="btn-ghost btn-sm" id="mat-file-btn">上传 .txt</button>
+            <input type="file" id="mat-file" accept=".txt,.md,text/plain" hidden>
+            <span class="mg-hint" id="mat-hint"></span>
+          </div>
+          <textarea class="mg-ta mat-ta" id="mat-body" spellcheck="false"
+            placeholder="在这里粘贴正文，例如：&#10;春天来了，校园里的树都发出了新芽……"></textarea>
+          <div class="mg-row" style="margin-top:10px">
+            <button class="btn-blue btn-sm" id="mat-save">保存到文本库</button>
+            <button class="btn-ghost btn-sm" id="mat-clear">清空</button>
+            <span class="mg-hint" id="mat-count">0 字</span>
+          </div>
+        </div>
+        <div class="mat-list" id="mat-list"></div>
+      </div>
+
+      <!-- 访问码：只有超级管理员能改 -->
+      <div class="an-card an-wide" id="code-card" hidden>
+        <div class="an-h">教师端访问码 <span>只有超级管理员能改</span></div>
+        <p class="mg-p">
+          超级管理员能改名单、导入名单、管理练习文本；普通教师只能用课堂功能、看数据。
+          改完立刻生效，<b>已经登录的页面不会掉线</b>（登录本身 12 小时后自然过期）。
+          忘了码可以看服务端启动时打印的命令行窗口。
+        </p>
+        <div class="mg-row">
+          <span class="mg-l">超级管理员</span>
+          <input class="mini-inp" id="code-admin" maxlength="32" spellcheck="false" style="width:190px">
+          <span class="mg-l" style="margin-left:12px">普通教师</span>
+          <input class="mini-inp" id="code-teacher" maxlength="32" spellcheck="false" style="width:190px">
+          <button class="btn-blue btn-sm" id="code-save">保存访问码</button>
+          <span class="mg-hint" id="code-hint"></span>
+        </div>
+      </div>
+
+      <!-- 普通教师看到的提示 -->
+      <div class="an-card an-wide" id="mg-lock" hidden>
+        <div class="an-h">学校与班级名单</div>
+        <p class="mg-p" style="margin:0">
+          当前是<b>普通教师</b>账号，只能查看和使用名单，不能修改或导入。
+          需要增加学校、班级时，请让超级管理员登录后操作。
+        </p>
+      </div>
+
+      <div class="an-card an-wide">
+        <div class="an-h">数据与重置</div>
+        <div class="mg-row">
+          <a class="btn-ghost btn-sm" href="/api/export.csv" download style="text-decoration:none;display:inline-flex;align-items:center">导出全部成绩 CSV</a>
+          <button class="btn-ghost btn-sm" id="r-live">清空在线名单</button>
+          <button class="btn-ghost btn-sm" id="r-records">清空成绩（保留在线）</button>
+          <button class="btn-ghost btn-sm danger" id="r-all">全部清空</button>
+        </div>
+        <p class="mg-p" style="margin-top:12px">
+          「清空在线名单」用于换班上课；「清空成绩」会删掉排行榜数据但保留学生随时可继续练；
+          「全部清空」连动态流一起清掉，开学分班时用。
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<div class="toast2" id="toast2"></div>
+<script src="data.js"></script>
+<script src="rank.js"></script>
+<script src="teacher.js"></script>
+</body>
+</html>

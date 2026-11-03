@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>打字练习 · 课堂大屏</title>
+<style>
+:root{
+  --gold:#fbbf24; --silver:#cbd5e1; --bronze:#fb923c;
+  --cyan:#38bdf8; --green:#34d399; --red:#fb7185;
+  --ink:#e8eefc; --ink2:#9db0cf; --ink3:#6b7f9e;
+  --line:rgba(255,255,255,.10);
+  --card:rgba(255,255,255,.055);
+  --mono:"SF Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* .wall-empty 之类的元素自带 display:flex，会盖掉 UA 的 [hidden]，必须提权 */
+[hidden]{display:none !important}
+html,body{height:100%;overflow:hidden}
+body{
+  background:radial-gradient(1400px 700px at 50% -10%,#1b3a6b 0%,#0d1e38 45%,#08111f 100%);
+  color:var(--ink);
+  font:400 clamp(12px,1.02vw,17px)/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+/* 单列必须写 minmax(0,1fr)：只写 rows 时默认列是 auto，会被三栏内容的
+   min-content 撑到 4700px，右侧栏和顶栏右半截直接跑到屏幕外。 */
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;gap:0;overflow:hidden}
+
+/* ============================ 顶栏 ============================ */
+.hd{
+  display:flex;align-items:center;justify-content:space-between;gap:2vw;
+  padding:1.5vh 2vw;border-bottom:1px solid var(--line);overflow:hidden;
+  background:linear-gradient(180deg,rgba(56,189,248,.07),transparent);
+}
+.hd-l{display:flex;align-items:center;gap:.8vw;min-width:0;overflow:hidden}
+.hd-dot{
+  width:.62vw;height:.62vw;min-width:8px;min-height:8px;border-radius:50%;background:#22c55e;
+  box-shadow:0 0 0 .28vw rgba(34,197,94,.18);animation:breath 2.4s ease-in-out infinite;flex:0 0 auto;
+}
+@keyframes breath{0%,100%{opacity:1}50%{opacity:.45}}
+.hd-t{font-size:clamp(16px,1.55vw,26px);font-weight:800;letter-spacing:.01em;white-space:nowrap}
+.hd-s{font-size:clamp(11px,.86vw,14px);color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:.6vw}
+.hd-r{display:flex;align-items:center;gap:1.4vw;flex:0 0 auto}
+.hd-stat{text-align:center}
+.hd-stat b{
+  display:block;font-size:clamp(18px,1.9vw,32px);font-weight:800;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:#fff;
+}
+.hd-stat span{font-size:clamp(9px,.76vw,12px);color:var(--ink3);font-weight:700;letter-spacing:.08em}
+.hd-qr{
+  width:6.2vh;height:6.2vh;min-width:40px;min-height:40px;background:#fff;border-radius:.5vw;
+  padding:.5vh;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.hd-qr canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.hd-clock{font:700 clamp(13px,1.15vw,19px)/1 var(--mono);color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ============================ 主体三栏 ============================ */
+.main{
+  display:grid;grid-template-columns:23% minmax(0,1fr) 24%;gap:0;min-height:0;min-width:0;
+  overflow:hidden;
+}
+/* min-width:0 必须写：1fr 列默认 min-width:auto，进度墙内容会把列顶宽，把右栏挤出屏幕 */
+.col{min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.col+.col{border-left:1px solid var(--line)}
+.col-hd{
+  padding:1.3vh 1.2vw .9vh;font-size:clamp(10px,.83vw,13px);font-weight:800;
+  letter-spacing:.14em;color:var(--ink3);display:flex;align-items:baseline;gap:.5vw;flex:0 0 auto;
+}
+.col-hd i{font-style:normal;font-size:clamp(9px,.72vw,11px);letter-spacing:0;color:#4b5f7d}
+
+/* ---------- 左：排行榜 ---------- */
+.rk{flex:1;overflow:hidden;padding:0 1vw 1vh;display:flex;flex-direction:column;gap:.55vh}
+.rk-row{
+  display:flex;align-items:center;gap:.7vw;padding:.85vh .8vw;border-radius:.45vw;
+  background:var(--card);border:1px solid transparent;transition:.3s;
+}
+.rk-row.top1{
+  background:linear-gradient(90deg,rgba(251,191,36,.20),rgba(251,191,36,.05));
+  border-color:rgba(251,191,36,.35);
+}
+.rk-row.top2{background:linear-gradient(90deg,rgba(203,213,225,.13),transparent)}
+.rk-row.top3{background:linear-gradient(90deg,rgba(251,146,60,.12),transparent)}
+.rk-row.me-pulse{animation:rowPulse 1.2s ease}
+@keyframes rowPulse{0%{transform:scale(1.04)}100%{transform:scale(1)}}
+.rk-n{
+  width:1.9vw;min-width:20px;text-align:center;font:800 clamp(12px,1.15vw,19px)/1 var(--mono);
+  color:var(--ink3);flex:0 0 auto;font-variant-numeric:tabular-nums;
+}
+.rk-n.n1{color:var(--gold);font-size:clamp(14px,1.35vw,23px)}
+.rk-n.n2{color:var(--silver)}
+.rk-n.n3{color:var(--bronze)}
+.rk-b{flex:1;min-width:0}
+.rk-nm{
+  font-size:clamp(12px,1.05vw,18px);font-weight:800;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rk-cl{font-size:clamp(9px,.72vw,11px);color:var(--ink3);font-weight:600;white-space:nowrap}
+.rk-sc{
+  font:800 clamp(13px,1.25vw,21px)/1 var(--mono);color:var(--cyan);
+  font-variant-numeric:tabular-nums;flex:0 0 auto;
+}
+.rk-row.top1 .rk-sc{color:var(--gold)}
+.rk-empty{
+  flex:1;display:flex;align-items:center;justify-content:center;text-align:center;
+  color:var(--ink3);font-size:clamp(11px,.86vw,14px);line-height:1.8;padding:2vh 1vw;
+}
+
+/* ---------- 中：进度墙 ---------- */
+.wall-wrap{flex:1;overflow:hidden;padding:0 1vw 1vh}
+.wall{display:grid;gap:.8vh .7vw;grid-template-columns:repeat(auto-fill,minmax(9.2vw,1fr));align-content:start}
+.wcard{
+  background:var(--card);border:1px solid var(--line);border-radius:.55vw;
+  padding:1vh .75vw;position:relative;overflow:hidden;transition:.35s;
+}
+.wcard.on{border-color:rgba(56,189,248,.30)}
+.wcard.now{
+  border-color:rgba(56,189,248,.6);
+  background:linear-gradient(180deg,rgba(56,189,248,.14),rgba(255,255,255,.04));
+  box-shadow:0 0 0 1px rgba(56,189,248,.16),0 0 24px -8px rgba(56,189,248,.5);
+}
+.wcard.off{opacity:.42}
+.wcard.dup{border-color:rgba(251,191,36,.55)}
+.wc-top{display:flex;align-items:center;gap:.35vw;margin-bottom:.3vh}
+.wc-dot{width:.42vw;height:.42vw;min-width:5px;min-height:5px;border-radius:50%;background:#22c55e;flex:0 0 auto}
+.wcard.off .wc-dot{background:#475569}
+.wc-nm{
+  font-size:clamp(11px,.94vw,16px);font-weight:800;color:#fff;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.wc-mode{
+  display:inline-block;font-size:clamp(8px,.62vw,10px);font-weight:800;
+  padding:.1vh .4vw;border-radius:99px;background:rgba(56,189,248,.16);color:var(--cyan);
+  margin-bottom:.5vh;white-space:nowrap;
+}
+.wc-mode.falling{background:rgba(251,191,36,.16);color:var(--gold)}
+.wc-mode.speed{background:rgba(52,211,153,.16);color:var(--green)}
+.wc-mode.wordrush{background:rgba(167,139,250,.18);color:#c4b5fd}
+.wc-mode.zh{background:rgba(248,113,113,.18);color:#fca5a5}
+.wc-mode.idle{background:rgba(107,127,158,.18);color:var(--ink3)}
+.wc-bar{height:.55vh;min-height:4px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-bottom:.45vh}
+.wc-bar i{
+  display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,#38bdf8,#2563eb);transition:width .4s ease;
+}
+.wcard.now .wc-bar i{background:linear-gradient(90deg,#67e8f9,#38bdf8)}
+.wc-nums{display:flex;justify-content:space-between;font-size:clamp(9px,.72vw,11px);color:var(--ink3);font-weight:700}
+.wc-nums b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:clamp(10px,.82vw,13px)}
+.wall-empty{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2vh;color:var(--ink3);text-align:center;
+}
+.wall-empty .big{font-size:clamp(14px,1.3vw,21px);font-weight:700;color:var(--ink2)}
+.wall-empty .sub{font-size:clamp(11px,.86vw,14px);line-height:1.9}
+.wall-empty .url{
+  font:700 clamp(12px,1.1vw,18px)/1 var(--mono);color:var(--cyan);
+  background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.28);
+  padding:1.2vh 1.6vw;border-radius:.5vw;letter-spacing:.02em;
+}
+
+/* ---------- 右：动态 ---------- */
+.fd{flex:1;overflow:hidden;padding:0 1vw 1vh;display:flex;flex-direction:column;gap:.5vh}
+.fd-item{
+  display:flex;gap:.6vw;font-size:clamp(10px,.82vw,13px);line-height:1.55;
+  padding:.65vh .7vw;border-radius:.4vw;background:rgba(255,255,255,.035);
+  animation:fdIn .45s ease;
+}
+@keyframes fdIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.fd-item:first-child{background:rgba(56,189,248,.11);border-left:2px solid var(--cyan)}
+.fd-t{color:var(--ink3);font-family:var(--mono);font-size:clamp(8.5px,.7vw,11px);flex:0 0 auto;padding-top:.15vh}
+.fd-b{flex:1;min-width:0;color:var(--ink2);word-break:break-word}
+.fd-b b{color:#fff;font-weight:800}
+.fd-item.k-record .fd-b b{color:var(--green)}
+.fd-item.k-weak .fd-b b{color:var(--gold)}
+
+/* ============================ 底部 ============================ */
+.ft{
+  display:flex;align-items:center;gap:1.6vw;padding:1.1vh 2vw;
+  border-top:1px solid var(--line);background:rgba(0,0,0,.22);
+}
+.ft-stat{display:flex;align-items:baseline;gap:.4vw;flex:0 0 auto}
+.ft-stat b{
+  font-size:clamp(14px,1.5vw,25px);font-weight:800;color:#fff;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+}
+.ft-stat span{font-size:clamp(9px,.78vw,12px);color:var(--ink3);font-weight:700}
+.ft-sep{width:1px;height:2.4vh;background:var(--line);flex:0 0 auto}
+.ft-ticker{flex:1;min-width:0;overflow:hidden;position:relative;height:2.6vh;display:flex;align-items:center}
+.ft-ticker .track{
+  display:inline-flex;gap:3vw;white-space:nowrap;
+  font-size:clamp(11px,.9vw,15px);font-weight:700;color:var(--ink2);
+  animation:ticker 32s linear infinite;padding-left:100%;
+}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.ft-ticker .track em{font-style:normal;color:var(--gold)}
+.ft-ticker .track i{font-style:normal;color:var(--cyan)}
+
+/* 新纪录闪现 */
+.flash{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:99;opacity:0;
+}
+.flash.on{animation:flashIn 1.9s ease}
+@keyframes flashIn{
+  0%{opacity:0;transform:scale(.9)}
+  14%{opacity:1;transform:scale(1)}
+  72%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.03)}
+}
+.flash-card{
+  background:linear-gradient(135deg,rgba(251,191,36,.94),rgba(245,158,11,.94));
+  color:#3b2200;padding:2.4vh 3.4vw;border-radius:1vw;text-align:center;
+  box-shadow:0 30px 90px -20px rgba(251,191,36,.65);
+}
+.flash-card .k{font-size:clamp(10px,.8vw,13px);font-weight:800;letter-spacing:.2em;opacity:.72}
+.flash-card .n{font-size:clamp(22px,2.6vw,46px);font-weight:800;margin:.8vh 0 .4vh;letter-spacing:-.02em}
+.flash-card .d{font-size:clamp(12px,1.05vw,18px);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 顶栏 -->
+  <header class="hd">
+    <div class="hd-l">
+      <span class="hd-dot"></span>
+      <span class="hd-t">打字练习 · 课堂实况</span>
+      <span class="hd-s" id="hd-sub"></span>
+    </div>
+    <div class="hd-r">
+      <div class="hd-stat"><b id="h-online">0</b><span>在线</span></div>
+      <div class="hd-stat"><b id="h-qual">0</b><span>达标</span></div>
+      <div class="hd-stat"><b id="h-cpm">0</b><span>平均 CPM</span></div>
+      <div class="hd-qr" id="hd-qr"></div>
+      <div class="hd-clock" id="h-clock">--:--</div>
+    </div>
+  </header>
+
+  <!-- 三栏 -->
+  <div class="main">
+    <section class="col">
+      <div class="col-hd">总分榜 <i>TOP 10</i></div>
+      <div class="rk" id="rk"></div>
+    </section>
+
+    <section class="col">
+      <div class="col-hd">实时进度 <i id="wall-count"></i></div>
+      <div class="wall-wrap" id="wall-wrap">
+        <div class="wall" id="wall"></div>
+        <div class="wall-empty" id="wall-empty" hidden>
+          <div class="big">等待同学们开始练习</div>
+          <div class="sub">用手机或机房电脑打开下面这个地址<br>选择学校、班级，填上姓名就能进入</div>
+          <div class="url" id="wall-url">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="col">
+      <div class="col-hd">课堂动态 <i>实时</i></div>
+      <div class="fd" id="fd"></div>
+    </section>
+  </div>
+
+  <!-- 底部 -->
+  <footer class="ft">
+    <div class="ft-stat"><b id="f-acc">0</b><span>% 平均准确率</span></div>
+    <div class="ft-sep"></div>
+    <div class="ft-stat"><b id="f-keys">0</b><span>累计击键</span></div>
+    <div class="ft-sep"></div>
+    <div class="ft-stat"><b id="f-rate">0</b><span>% 错误率</span></div>
+    <div class="ft-sep"></div>
+    <div class="ft-ticker"><div class="track" id="ticker"></div></div>
+  </footer>
+</div>
+
+<div class="flash" id="flash">
+  <div class="flash-card">
+    <div class="k">新 纪 录</div>
+    <div class="n" id="flash-n"></div>
+    <div class="d" id="flash-d"></div>
+  </div>
+</div>
+
+<script src="rank.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = { live: [], board: [], feed: [], keys: null, net: null, schools: [], accGate: 0.60 };
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmt(n, d) {
+    var v = Number(n) || 0;
+    return v.toFixed(d == null ? 0 : d).replace(/\.0+$/, '');
+  }
+  var MODE_CLS = { key: '', falling: 'falling', speed: 'speed', wordrush: 'wordrush', zh: 'zh' };
+
+  /* ---------------- 时钟 ---------------- */
+  setInterval(function () {
+    var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+    $('h-clock').textContent = p(d.getHours()) + ':' + p(d.getMinutes());
+  }, 1000);
+
+  /* ---------------- 渲染 ---------------- */
+  function paintTop() {
+    var on = S.live.filter(function (x) { return x.online; });
+    $('h-online').textContent = on.length;
+    $('h-qual').textContent = S.board.filter(function (r) { return r.total > 0; }).length;
+
+    var cpms = on.filter(function (x) { return x.cpm > 0; }).map(function (x) { return x.cpm; });
+    var avg = cpms.length ? Math.round(cpms.reduce(function (a, b) { return a + b; }, 0) / cpms.length) : 0;
+    $('h-cpm').textContent = avg;
+
+    var accs = on.filter(function (x) { return x.acc > 0; }).map(function (x) { return x.acc; });
+    var avgAcc = accs.length ? Math.round(accs.reduce(function (a, b) { return a + b; }, 0) / accs.length * 100) : 0;
+    $('f-acc').textContent = avgAcc;
+
+    var keys = on.reduce(function (a, x) { return a + (x.keys || 0); }, 0);
+    $('f-keys').textContent = keys > 9999 ? (keys / 1000).toFixed(1) + 'k' : keys;
+
+    if (S.keys) $('f-rate').textContent = S.keys.avgRate || 0;
+
+    /* 学校名 */
+    var schools = {};
+    on.forEach(function (x) { if (x.school) schools[x.school] = 1; });
+    var sn = Object.keys(schools);
+    $('hd-sub').textContent = sn.length === 1 ? sn[0] : (sn.length > 1 ? (sn.length + ' 所学校') : '');
+  }
+
+  function paintRank() {
+    var rows = S.board.filter(function (r) { return r.total > 0; }).slice(0, 10);
+    var box = $('rk');
+    if (!rows.length) {
+      box.innerHTML = '<div class="rk-empty">还没有人上榜<br>准确率达到 ' +
+        Math.round(S.accGate * 100) + '% 就会出现在这里</div>';
+      return;
+    }
+    box.innerHTML = rows.map(function (r, i) {
+      var n = i + 1;
+      var ncls = 'rk-n' + (n <= 3 ? ' n' + n : '');
+      return '<div class="rk-row' + (n <= 3 ? ' top' + n : '') + '">' +
+        '<span class="' + ncls + '">' + n + '</span>' +
+        '<div class="rk-b">' +
+          '<div class="rk-nm">' + esc(r.name) + '</div>' +
+          '<div class="rk-cl">' + esc(r.cls) + '</div>' +
+        '</div>' +
+        '<span class="rk-sc">' + fmt(r.total) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function paintWall() {
+    var list = S.live.filter(function (x) { return x.online; });
+    var wall = $('wall'), empty = $('wall-empty');
+
+    if (!list.length) {
+      wall.innerHTML = '';
+      empty.hidden = false;
+      if (S.net) $('wall-url').textContent = S.net.studentUrl;
+      $('wall-count').textContent = '';
+      return;
+    }
+    empty.hidden = true;
+    $('wall-count').textContent = list.length + ' 人在练习';
+
+    /* 正在练的排前面 */
+    list.sort(function (a, b) {
+      if (!!a.mode !== !!b.mode) return a.mode ? -1 : 1;
+      return String(a.name).localeCompare(String(b.name), 'zh');
+    });
+
+    wall.innerHTML = list.map(function (x) {
+      var c = 'wcard on';
+      if (x.mode) c += ' now';
+      if (x.dup) c += ' dup';
+      var mcls = x.mode ? (MODE_CLS[x.mode] || '') : 'idle';
+      var pct = Math.round((x.progress || 0) * 100);
+      return '<div class="' + c + '">' +
+        '<div class="wc-top"><span class="wc-dot"></span><span class="wc-nm">' + esc(x.name) + '</span></div>' +
+        '<span class="wc-mode ' + mcls + '">' + esc(x.modeName || '未开始') + '</span>' +
+        '<div class="wc-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="wc-nums"><span><b>' + (x.cpm ? Math.round(x.cpm) : '—') + '</b> ' +
+          (x.mode === 'zh' ? '字/分' : 'CPM') + '</span>' +
+        '<span><b>' + (x.acc ? Math.round(x.acc * 100) : '—') + '</b>%</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function paintFeed() {
+    var list = S.feed.slice(0, 14);
+    var box = $('fd');
+    if (!list.length) {
+      box.innerHTML = '<div class="fd-item"><span class="fd-b">等待第一条动态…</span></div>';
+      return;
+    }
+    box.innerHTML = list.map(function (f) {
+      var cls = f.kind === 'record' ? ' k-record' : (f.kind === 'weak' ? ' k-weak' : '');
+      return '<div class="fd-item' + cls + '">' +
+        '<span class="fd-t">' + esc(f.time) + '</span>' +
+        '<span class="fd-b"><b>' + esc(f.name) + '</b> ' + esc(f.text) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function paintTicker() {
+    var rows = S.board.filter(function (r) { return r.total > 0; }).slice(0, 6);
+    var parts = [];
+    rows.forEach(function (r, i) {
+      parts.push('<span>第 ' + (i + 1) + ' 名 <em>' + esc(r.name) + '</em>　总分 <i>' +
+        fmt(r.total) + '</i>　最高 <i>' + fmt(r.cpm) + '</i> CPM</span>');
+    });
+    var on = S.live.filter(function (x) { return x.online; }).length;
+    parts.push('<span>当前 <i>' + on + '</i> 人在线练习　及格线：准确率 <i>' +
+      Math.round(S.accGate * 100) + '%</i></span>');
+    $('ticker').innerHTML = parts.join('') + parts.join('');
+  }
+
+  function paintAll() {
+    paintTop(); paintRank(); paintWall(); paintFeed(); paintTicker();
+  }
+
+  /* ---------------- 新纪录闪现 ---------------- */
+  var lastFlashAt = 0;
+  function flash(name, text) {
+    var now = Date.now();
+    if (now - lastFlashAt < 6000) return;   // 别刷屏
+    lastFlashAt = now;
+    $('flash-n').textContent = name;
+    $('flash-d').textContent = text;
+    var el = $('flash');
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  }
+
+  /* ---------------- 数据 ---------------- */
+  /* 在线列表可能是整表（init）也可能是增量（心跳/提交/定时扫描推来的那几条） */
+  function applyLive(d) {
+    if (d.live) { if (window.LIVE) LIVE.set(S.live, d.live); else S.live = d.live; }
+    if (window.LIVE) {
+      if (d.liveRow) LIVE.merge(S.live, d.liveRow);
+      if (d.liveUpd) LIVE.mergeAll(S.live, d.liveUpd);
+      if (d.liveDel) LIVE.drop(S.live, d.liveDel);
+    }
+  }
+
+  function apply(d) {
+    applyLive(d);
+    if (d.board) S.board = d.board;
+    if (d.feed) S.feed = d.feed;
+    if (d.keys) S.keys = d.keys;
+    if (d.net) S.net = d.net;
+    if (d.schools) S.schools = d.schools;
+    if (d.accGate) S.accGate = d.accGate;
+  }
+
+  var raf = 0;
+  function mark() {
+    if (raf) return;
+    raf = requestAnimationFrame(function () { raf = 0; paintAll(); });
+  }
+
+  var es = new EventSource('/api/stream');
+  es.addEventListener('init', function (e) {
+    apply(JSON.parse(e.data));
+    paintAll();
+    if (S.net) drawQR(S.net.studentUrl);
+    if (S.net) $('wall-url').textContent = S.net.studentUrl;
+  });
+  es.addEventListener('live', function (e) {
+    var d = JSON.parse(e.data);
+    applyLive(d);
+    mark();
+  });
+  es.addEventListener('result', function (e) {
+    var d = JSON.parse(e.data);
+    if (d.row && window.BOARD) BOARD.merge(S.board, d.row);
+    else if (d.board) S.board = d.board;
+    applyLive(d);
+    if (d.keys) S.keys = d.keys;
+    if (d.item) S.feed.unshift(d.item);
+    mark();
+    if (d.record && d.record.qualified && d.record.mode !== 'falling') {
+      flash(d.record.name, d.record.cpm + ' CPM · 准确率 ' + Math.round(d.record.acc * 100) + '%');
+    }
+  });
+  es.addEventListener('feed', function (e) {
+    var d = JSON.parse(e.data);
+    if (d.item && (!S.feed.length || S.feed[0].id !== d.item.id)) S.feed.unshift(d.item);
+    if (S.feed.length > 60) S.feed.length = 60;
+    mark();
+  });
+  es.addEventListener('reset', function (e) {
+    var d = JSON.parse(e.data);
+    if (d.state) apply(d.state);
+    mark();
+  });
+
+  /* ---------------- 二维码 ---------------- */
+  function drawQR(text) {
+    if (!text) return;
+    fetch('/api/qr?text=' + encodeURIComponent(text))
+      .then(function (r) { return r.json(); })
+      .then(function (q) {
+        if (!q || !q.modules) return;
+        var n = q.size, quiet = 3, scale = 3;
+        var px = (n + quiet * 2) * scale;
+        var cv = document.createElement('canvas');
+        cv.width = px; cv.height = px;
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
+        ctx.fillStyle = '#08111f';
+        for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+          if (q.modules[y][x]) ctx.fillRect((x + quiet) * scale, (y + quiet) * scale, scale, scale);
+        }
+        var box = $('hd-qr');
+        box.innerHTML = '';
+        box.appendChild(cv);
+      }).catch(function () { });
+  }
+})();
+</script>
+</body>
+</html>

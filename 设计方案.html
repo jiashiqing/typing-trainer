@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>全县中小学生打字练习系统 · 设计方案</title>
+<style>
+:root{
+  --ink:#1a1d23; --ink2:#3d434e; --ink3:#6b7280; --line:#e3e6ec; --line2:#eef0f4;
+  --bg:#ffffff; --bg2:#f7f8fa; --bg3:#f1f3f7;
+  --blue:#2563eb; --blue-bg:#eff5ff;
+  --green:#0f9d58; --green-bg:#edfaf3;
+  --amber:#d97706; --amber-bg:#fff8ec;
+  --red:#dc2626; --red-bg:#fef2f2;
+  --purple:#7c3aed; --purple-bg:#f5f0ff;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px -12px rgba(16,24,40,.12);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg2); color:var(--ink);
+  font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+/* ---------- 封面 ---------- */
+.cover{
+  margin:0 -24px 0; padding:64px 56px 56px;
+  background:linear-gradient(160deg,#0b1b3a 0%,#122a52 46%,#1b3f74 100%);
+  color:#fff; position:relative; overflow:hidden;
+}
+.cover:after{
+  content:""; position:absolute; right:-120px; top:-90px; width:460px; height:460px;
+  background:radial-gradient(circle,rgba(96,165,250,.30),transparent 62%);
+}
+.cover-kicker{
+  display:inline-flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:.14em;
+  color:#9dc3ff; border:1px solid rgba(157,195,255,.34); border-radius:99px;
+  padding:5px 14px; margin-bottom:26px; font-weight:600;
+}
+.cover h1{
+  margin:0 0 14px; font-size:38px; line-height:1.32; font-weight:800; letter-spacing:-.6px;
+}
+.cover h1 small{display:block;font-size:17px;font-weight:500;color:#a9c6f0;letter-spacing:0;margin-top:14px;line-height:1.7}
+.cover-meta{
+  display:flex; gap:36px; flex-wrap:wrap; margin-top:34px; padding-top:26px;
+  border-top:1px solid rgba(255,255,255,.14); font-size:13.5px; color:#9fb6d6;
+}
+.cover-meta b{display:block;color:#fff;font-size:14.5px;font-weight:600;margin-top:3px}
+/* ---------- 章节 ---------- */
+h2{
+  margin:56px 0 8px; font-size:24px; font-weight:800; letter-spacing:-.3px;
+  padding-left:16px; border-left:4px solid var(--blue); line-height:1.4;
+}
+h2 .num{color:var(--blue);font-variant-numeric:tabular-nums;margin-right:9px}
+h3{margin:34px 0 10px;font-size:17.5px;font-weight:700;color:var(--ink)}
+h4{margin:22px 0 8px;font-size:15px;font-weight:700;color:var(--ink2)}
+p{margin:10px 0;color:var(--ink2)}
+ul,ol{margin:10px 0;padding-left:24px;color:var(--ink2)}
+li{margin:5px 0}
+li>strong,p>strong,b{color:var(--ink);font-weight:700}
+code{
+  background:var(--bg3); border:1px solid var(--line); border-radius:5px;
+  padding:1px 6px; font-size:13px; font-family:"SF Mono",Consolas,"Courier New",monospace; color:#b02a5b;
+}
+.lead{font-size:16px;color:var(--ink2);margin-top:6px}
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--bg); border:1px solid var(--line); border-radius:14px;
+  padding:22px 24px; margin:16px 0; box-shadow:var(--shadow);
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+@media(max-width:820px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+.tile{
+  background:var(--bg); border:1px solid var(--line); border-radius:12px;
+  padding:18px 18px 16px; box-shadow:var(--shadow);
+}
+.tile .ico{font-size:22px;line-height:1;margin-bottom:10px}
+.tile h4{margin:0 0 6px;font-size:15px}
+.tile p{margin:0;font-size:13.5px;color:var(--ink3);line-height:1.65}
+/* ---------- 表格 ---------- */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;margin:16px 0;font-size:13.5px;background:#fff;
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.tbl th{
+  background:var(--bg3); text-align:left; font-weight:700; color:var(--ink); font-size:12.5px;
+  letter-spacing:.03em; padding:11px 14px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line2);color:var(--ink2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td:first-child{font-weight:600;color:var(--ink)}
+.tbl code{font-size:12.5px}
+/* ---------- 徽标 ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;line-height:1.7;letter-spacing:.02em}
+.tag.blue{background:var(--blue-bg);color:var(--blue)}
+.tag.green{background:var(--green-bg);color:var(--green)}
+.tag.amber{background:var(--amber-bg);color:var(--amber)}
+.tag.red{background:var(--red-bg);color:var(--red)}
+.tag.purple{background:var(--purple-bg);color:var(--purple)}
+.tag.gray{background:var(--bg3);color:var(--ink3)}
+/* ---------- 提示框 ---------- */
+.note{
+  border-left:3px solid var(--blue); background:var(--blue-bg);
+  border-radius:0 10px 10px 0; padding:14px 18px; margin:16px 0; font-size:13.8px; color:#1e3a8a;
+}
+.note.warn{border-color:var(--amber);background:var(--amber-bg);color:#92400e}
+.note.key{border-color:var(--green);background:var(--green-bg);color:#065f46}
+.note b{color:inherit}
+.note .t{display:block;font-weight:800;margin-bottom:3px;font-size:13px;letter-spacing:.04em}
+/* ---------- 流程 ---------- */
+.flow{display:flex;align-items:stretch;gap:0;margin:20px 0;flex-wrap:wrap}
+.flow .step{
+  flex:1 1 0; min-width:132px; background:#fff; border:1px solid var(--line);
+  padding:14px 15px; position:relative;
+}
+.flow .step:first-child{border-radius:11px 0 0 11px}
+.flow .step:last-child{border-radius:0 11px 11px 0}
+.flow .step+.step{border-left:none}
+.flow .step .n{
+  width:21px;height:21px;border-radius:50%;background:var(--blue);color:#fff;font-size:11.5px;
+  font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:8px;
+}
+.flow .step b{display:block;font-size:13.5px;margin-bottom:3px}
+.flow .step span{font-size:12.5px;color:var(--ink3);line-height:1.6}
+/* ---------- 架构图 ---------- */
+.arch{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px 24px;margin:18px 0;box-shadow:var(--shadow)}
+.arch-row{display:flex;gap:12px;align-items:stretch;justify-content:center;margin:10px 0;flex-wrap:wrap}
+.arch-box{
+  border-radius:10px;padding:13px 16px;font-size:13px;text-align:center;
+  border:1.5px solid; min-width:128px; background:#fff;
+}
+.arch-box b{display:block;font-size:13.5px;margin-bottom:2px}
+.arch-box span{font-size:11.5px;opacity:.82}
+.arch-box.client{border-color:#93c5fd;background:#f0f7ff;color:#1e40af}
+.arch-box.server{border-color:#1e40af;background:#1e40af;color:#fff}
+.arch-box.data{border-color:#a7d8bf;background:#f0fdf6;color:#065f46}
+.arch-box.role{border-color:#d8c8f5;background:#f8f4ff;color:#5b21b6}
+.arch-arrow{display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:19px;padding:0 2px}
+.arch-label{text-align:center;font-size:11.5px;color:var(--ink3);margin:2px 0 12px;letter-spacing:.03em}
+/* ---------- 公式 ---------- */
+.formula{
+  background:#0f172a; color:#e2e8f0; border-radius:12px; padding:20px 24px; margin:16px 0;
+  font-family:"SF Mono",Consolas,"Courier New",monospace; font-size:14px; line-height:2.1; overflow-x:auto;
+}
+.formula .c{color:#7dd3fc}
+.formula .k{color:#fca5a5}
+.formula .g{color:#86efac}
+.formula .m{color:#64748b}
+/* ---------- 键帽 ---------- */
+.keys{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.key{
+  min-width:30px;height:30px;border:1px solid #cfd6e2;border-bottom-width:2.5px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;
+  background:#fff;color:var(--ink2);font-family:"SF Mono",Consolas,monospace;
+}
+.key.l{background:#eef5ff;border-color:#93c5fd;color:#1d4ed8}
+.key.r{background:#fff1f2;border-color:#fda4af;color:#be123c}
+.key.m{background:#f5f0ff;border-color:#c4b5fd;color:#6d28d9}
+/* ---------- 目录 ---------- */
+.toc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 26px;margin:-32px 0 0;position:relative;
+  box-shadow:0 12px 32px -16px rgba(16,24,40,.22)}
+.toc h4{margin:0 0 10px;font-size:12.5px;letter-spacing:.12em;color:var(--ink3);font-weight:800}
+.toc ol{margin:0;columns:2;column-gap:44px;padding-left:18px;font-size:13.8px}
+.toc li{margin:6px 0;break-inside:avoid}
+.toc a{color:var(--ink2);text-decoration:none}
+.toc a:hover{color:var(--blue)}
+@media(max-width:720px){.toc ol{columns:1}}
+.footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink3)}
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="cover-kicker">区县教育信息化 · 学科工具</div>
+  <h1>全县中小学生打字练习系统
+    <small>教师端实时大屏 · 学生端五类练习（含中文跟打）· 校级与班级排行榜 · 错键学情分析</small>
+  </h1>
+  <div class="cover-meta">
+    <div>适用学段<b>小学 3 年级 — 初中 9 年级</b></div>
+    <div>角色<b>学生 / 教师 / 教研员</b></div>
+    <div>部署形态<b>一台教师机开局域网，全校并发</b></div>
+    <div>文档版本<b>v1.0 设计方案</b></div>
+  </div>
+</header>
+
+<div class="page">
+
+<nav class="toc">
+  <h4>目 录</h4>
+  <ol>
+    <li><a href="#s1">建设目标与设计取向</a></li>
+    <li><a href="#s2">角色、页面与使用流程</a></li>
+    <li><a href="#s3">登录身份：学校 → 班级 → 姓名</a></li>
+    <li><a href="#s4">五类练习模式设计</a></li>
+    <li><a href="#s5">评分口径与排行榜规则</a></li>
+    <li><a href="#s6">教师端与实时大屏</a></li>
+    <li><a href="#s6b">数据放在哪：SQLite 而不是 JSON</a></li>
+    <li><a href="#s7">错键热力：把打字数据变成教学依据</a></li>
+    <li><a href="#s8">技术架构与数据模型</a></li>
+    <li><a href="#s9">课堂使用建议与部署</a></li>
+    <li><a href="#s10">可扩展方向</a></li>
+  </ol>
+</nav>
+
+<h2 id="s1"><span class="num">01</span>建设目标与设计取向</h2>
+
+<p class="lead">一句话：<b>让全县每一个孩子都能在课堂上"看得见自己进步"，让每一位老师"看得见全班在哪儿卡住"。</b></p>
+
+<p>打字（键盘输入）是信息科技课程的基础技能，但长期存在三个真问题：</p>
+
+<div class="grid3">
+  <div class="tile">
+    <div class="ico">🎯</div>
+    <h4>练得没反馈</h4>
+    <p>学生闷头打，不知道自己比别人快还是慢，也不知道错在哪个键，练 10 分钟和练 1 分钟感觉一样。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">📊</div>
+    <h4>教得没依据</h4>
+    <p>老师只能看到"谁打得慢"，看不到"全班在哪个键上集体出错"，讲评靠感觉。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">📈</div>
+    <h4>管得没数据</h4>
+    <p>县域层面要掌握各校开课情况，只能靠报表自报，缺少过程性、可比对的真实数据。</p>
+  </div>
+</div>
+
+<h3>四条设计原则</h3>
+
+<table class="tbl">
+  <thead><tr><th style="width:130px">原则</th><th>具体做法</th><th style="width:230px">为什么这样做</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>先准后快</td>
+      <td>准确率低于 85% 的成绩不计入排行榜，界面明确提示"再稳一点就能上榜"。</td>
+      <td>打字教学最大的坑是"瞎打求快"。规则层面就必须拦住这条路。</td>
+    </tr>
+    <tr>
+      <td>游戏不替代训练</td>
+      <td>游戏模式（落字）只承担"键位熟练度"，速度与准确率的正式成绩来自无干扰的计时练习。</td>
+      <td>游戏化的价值是兴趣和手速，不是评价。两者混在一起，数据就废了。</td>
+    </tr>
+    <tr>
+      <td>数据自动产生</td>
+      <td>学生正常练习，数据自动上报，不需要额外填表、打卡、截图。</td>
+      <td>任何需要老师额外操作的系统，两周后就会停用。</td>
+    </tr>
+    <tr>
+      <td>断网不废课</td>
+      <td>教师机单机起步即可用，学生端数据本地缓存，网络恢复后自动补传。</td>
+      <td>机房网络是常态风险，不能因为网断了这节课就上不了。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s2"><span class="num">02</span>角色、页面与使用流程</h2>
+
+<div class="grid4">
+  <div class="tile">
+    <div class="ico">🧑‍🎓</div>
+    <h4>学生端</h4>
+    <p>登录 → 练习大厅 → 五类练习 → 我的成绩 / 班级排行榜</p>
+  </div>
+  <div class="tile">
+    <div class="ico">👩‍🏫</div>
+    <h4>教师端</h4>
+    <p>实时进度墙 · 排行榜 · 课堂动态 · 学情分析 · 数据导出</p>
+  </div>
+  <div class="tile">
+    <div class="ico">🖥️</div>
+    <h4>大屏看板</h4>
+    <p>投屏专用：进度墙 + 榜单 + 动态流，字号放大，无操作按钮</p>
+  </div>
+  <div class="tile">
+    <div class="ico">🏫</div>
+    <h4>校级 / 区县视图</h4>
+    <p>按学校、班级聚合对比，供教研员与学校管理者查看</p>
+  </div>
+</div>
+
+<h3>一节课的完整流程</h3>
+
+<div class="flow">
+  <div class="step"><div class="n">1</div><b>开机</b><span>教师机双击启动，屏幕显示学生入口地址与二维码</span></div>
+  <div class="step"><div class="n">2</div><b>登录</b><span>学生扫码/输网址，选学校、班级，填姓名，进入大厅</span></div>
+  <div class="step"><div class="n">3</div><b>练习</b><span>按老师指令进入某一模式，逐键/计时/游戏练习</span></div>
+  <div class="step"><div class="n">4</div><b>投屏</b><span>教师投出大屏，全班进度、榜单、动态实时可见</span></div>
+  <div class="step"><div class="n">5</div><b>讲评</b><span>教师端打开错键热力图，针对全班高频错键现场指导</span></div>
+  <div class="step"><div class="n">6</div><b>留档</b><span>一键导出本课成绩与学情，形成过程性记录</span></div>
+</div>
+
+<h2 id="s3"><span class="num">03</span>登录身份：学校 → 班级 → 姓名</h2>
+
+<p>县级系统的身份必须能<b>唯一确定一名学生</b>，否则排行榜和学情分析全部失效。登录采用三段式，不做自由输入：</p>
+
+<table class="tbl">
+  <thead><tr><th style="width:110px">字段</th><th style="width:150px">输入方式</th><th>规则</th></tr></thead>
+  <tbody>
+    <tr><td>学校</td><td>下拉选择</td><td>来自 <code>data/schools.json</code>，教师端可维护；默认内置本县学校名单模板</td></tr>
+    <tr><td>班级</td><td>下拉选择</td><td>随学校联动，如"三年级 1 班"；支持自定义新增（新学年直接加）</td></tr>
+    <tr><td>姓名</td><td>文本输入</td><td>2—10 个汉字；同班重名自动加序号后缀并提示，避免成绩串号</td></tr>
+  </tbody>
+</table>
+
+<div class="note key">
+  <span class="t">为什么不用账号密码</span>
+  小学课堂没有时间做账号体系。用"学校+班级+姓名"作为唯一标识，<b>一次登记就能开始练</b>，不设密码、不建账号。
+  <br><br>
+  机房里一台电脑多人共用，所以登录状态<b>只活在当前标签页里</b>：关掉浏览器再打开，必须重新登记，
+  不会把上一位同学留在页面上；但按 F5 刷新不会掉登录，学生误触刷新不至于白练一局。
+  换人时点顶栏「换个同学」，或者直接关掉重开 —— 学校和班级会按这台电脑上次用的预选好，
+  <b>姓名永远不预填</b>，下一位同学只写自己的名字。
+</div>
+
+<h4>座位号防串号（可选）</h4>
+<p>机房常见问题是"张三用李四的机器登录，成绩记到李四头上"。系统提供可选开关：登录时可填<b>机位号</b>，教师端可按机位核对；同时同一身份在 3 分钟内从两台不同机器登录会在大屏标黄提示"身份重复"，老师一眼可见。</p>
+
+<h2 id="s4"><span class="num">04</span>五类练习模式设计</h2>
+
+<p>五种模式对应打字能力的五个层面：<b>知道用哪根手指（键位）→ 手能跟上眼（反应）→ 能持续稳定输出（速度）→ 能在真实语料里保持准度（英文应用）→ 能用输入法把中文打对打快（中文应用）</b>。</p>
+
+<div class="grid2">
+  <div class="tile">
+    <div class="ico">⌨️</div>
+    <h4>① 键位闯关 <span class="tag blue">教学引导</span></h4>
+    <p>按提示逐个按键，屏幕实时高亮<b>该用哪根手指</b>。分 5 关推进，正确率不达标不放行。<br><b>定位：</b>三年级起点课、新课导入。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">🎮</div>
+    <h4>② 落字游戏 <span class="tag amber">游戏化</span></h4>
+    <p>字母与单词从顶部下落，按对键击落得分，漏掉扣血。<b>速度逐波加快</b>，连击有额外奖励。<br><b>定位：</b>热身、兴趣维持、手速训练。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">⏱️</div>
+    <h4>③ 速度练习 <span class="tag green">正式测评</span></h4>
+    <p>金山打字通式界面：给一段文本，逐字符高亮、错误标红，实时显示 CPM / 准确率。可设 1/2/3/5 分钟。<br><b>定位：</b>正式成绩来源、单元测评。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">🚀</div>
+    <h4>④ 单词冲刺 <span class="tag purple">限时挑战</span></h4>
+    <p>60 秒内尽可能多地打对英文单词，打错不前进。词库按学段分级。<br><b>定位：</b>课堂竞赛、课前 5 分钟。</p>
+  </div>
+  <div class="tile">
+    <div class="ico">🈶</div>
+    <h4>⑤ 中文跟打 <span class="tag red">输入法应用</span></h4>
+    <p>用<b>中文输入法</b>照着短文打：上屏文字逐字比对，打错的字立刻变红、必须退格改正。按<b>字/分钟</b>计速。<br><b>定位：</b>三—九年级日常练习，教师可导入本班文本。</p>
+  </div>
+</div>
+
+<h3>⑤ 中文跟打：为什么不能像英文那样逐键判定</h3>
+
+<p>英文可以"按一个键判一个字符"，中文不行：学生敲的是拼音，屏幕上出现的是汉字，中间隔着输入法候选框，一次还可能上屏一个词。所以中文改用<b>上屏结果比对</b>：</p>
+
+<div class="formula">
+<span class="c">打对字数</span> = 输入内容与目标文本的<span class="g">最长公共前缀</span><br>
+<span class="c">出错次数</span> = 出现"与原文不一致的字符"的次数（每次 +1）<br>
+<span class="c">有效速度</span> = 打对字数 ÷ 用时（分钟）→ <span class="g">字/分钟</span><br>
+<span class="m">// 打错不前进：红字必须退格删掉，绿字才继续往后走</span><br>
+<span class="m">// 禁止粘贴（前端拦截）；服务端另设上限 250 字/分，超限不进榜</span>
+</div>
+
+<p><b>为什么单独一个榜：</b>英文 120 CPM 很普通，中文 60 字/分已经算快，两者不是一个量纲。混在一张榜上会出现"练中文的人永远垫底"，教学上毫无意义。所以中文单独排「中文榜」，但同样计入个人总分（各模式最高分相加）。</p>
+
+<h3>⑤ 文本库：教师导入自己的文章</h3>
+
+<p>内置 4 篇中文短文够开课，但各校进度不同。超级管理员可在<b>课堂管理 → 练习文本库</b>里粘贴正文（或上传 <code>.txt</code>）导入，学生端「中文跟打」的文本下拉框里立刻可选；统一测评也能指定用某一篇。文本入库时自动压掉空白与多余换行、统计字数，20—3000 字，最多 100 篇。</p>
+
+<h3>① 键位闯关：五关递进与指法分工</h3>
+
+<p>关卡顺序遵循标准指法教学序列，每关要求<b>打对 N 个键</b>才算通过；打错不倒退，但会拉低准确率 —— 低于 85% 这一关不记成绩，得重打。</p>
+
+<table class="tbl">
+  <thead><tr><th style="width:70px">关卡</th><th style="width:160px">键位范围</th><th>内容与要求</th><th style="width:80px">难度系数</th></tr></thead>
+  <tbody>
+    <tr><td>第 1 关</td><td>基准键 <code>A S D F</code> <code>J K L ;</code> + <code>G H</code></td>
+      <td>手指归位。左手 A S D F、右手 J K L ;，食指负责 G H。打对 40 个键即通过；打错不倒退，只拉低准确率。</td><td>0.80</td></tr>
+    <tr><td>第 2 关</td><td>上排 <code>Q W E R T</code> <code>Y U I O P</code></td>
+      <td>手指从基准位上抬击键后<b>必须归位</b>，界面会检测回位提示。打对 40 个键即通过；打错不倒退，只拉低准确率。</td><td>0.85</td></tr>
+    <tr><td>第 3 关</td><td>下排 <code>Z X C V B</code> <code>N M</code></td>
+      <td>下排是错误率最高的一排，重点练 B（左手食指）与 N（右手食指）。打对 40 个键即通过；打错不倒退，只拉低准确率。</td><td>0.90</td></tr>
+    <tr><td>第 4 关</td><td>全字母混合</td>
+      <td>26 字母随机串，考察三排切换的流畅度。打对 60 个键即通过，标准同前。</td><td>1.00</td></tr>
+    <tr><td>第 5 关</td><td>数字与符号 <code>1—0</code> <code>, . ; ' -</code></td>
+      <td>数字排与常用标点，小学高年级与初中适用。打对 40 个键即通过；打错不倒退，只拉低准确率。</td><td>1.10</td></tr>
+  </tbody>
+</table>
+
+<h4>屏幕上的虚拟键盘</h4>
+<p>键位闯关界面下方常驻一个虚拟键盘，三种颜色标记指法分区，目标键<b>高亮闪烁</b>并显示对应手指名称：</p>
+<div class="keys">
+  <span class="key l">Q</span><span class="key l">W</span><span class="key l">E</span><span class="key l">R</span><span class="key l">T</span>
+  <span class="key r">Y</span><span class="key r">U</span><span class="key r">I</span><span class="key r">O</span><span class="key r">P</span>
+</div>
+<div class="keys">
+  <span class="key l">A</span><span class="key l">S</span><span class="key l">D</span><span class="key l">F</span><span class="key m">G</span>
+  <span class="key m">H</span><span class="key r">J</span><span class="key r">K</span><span class="key r">L</span><span class="key r">;</span>
+</div>
+<div class="keys">
+  <span class="key l">Z</span><span class="key l">X</span><span class="key l">C</span><span class="key l">V</span><span class="key m">B</span>
+  <span class="key m">N</span><span class="key r">M</span>
+</div>
+<p style="font-size:13px;color:#6b7280">
+  <span class="lead" style="font-size:13px"></span>
+  <b style="color:#1d4ed8">蓝色 = 左手</b>　<b style="color:#be123c">红色 = 右手</b>　<b style="color:#6d28d9">紫色 = 食指外扩（G H B N）</b>
+</p>
+
+<h3>② 落字游戏：规则细节</h3>
+
+<table class="tbl">
+  <thead><tr><th style="width:130px">要素</th><th>设计</th></tr></thead>
+  <tbody>
+    <tr><td>基础规则</td><td>字母从顶部下落，按对应键击落。<b>打对 +10 分</b>，连击每 5 个加成分递增。</td></tr>
+    <tr><td>生命</td><td>3 条命。字母落到底部 −1 命，按错键不扣命但<b>连击清零</b>。</td></tr>
+    <tr><td>难度曲线</td><td>每 45 秒升一波，下落速度 +12%，同时下落的字母数上限 +1。用于观察"越打越乱"的临界点。</td></tr>
+    <tr><td>词库切换</td><td>可选"纯字母"或"短单词"（如 cat / book / hand），后者需连续打对整词才消除。</td></tr>
+    <tr><td>结束条件</td><td>生命归零，或达到设定时长（默认 90 秒）。</td></tr>
+    <tr><td>上报指标</td><td>最终得分、最高连击、击落数、按错次数、平均反应时间（毫秒）。<b>平均反应时间是这个模式最有价值的教学数据</b>。</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="t">游戏模式的成绩不参与主榜</span>
+  落字游戏的分数受随机生成影响，横向不可比。它只进"手速榜"（平均反应时间排名）与"连击榜"，避免污染速度榜的严肃性。
+</div>
+
+<h3>③ 速度练习：金山打字通式界面</h3>
+
+<p>这是唯一产生<b>正式速度成绩</b>的模式。界面自上而下分四区：</p>
+
+<div class="card">
+  <h4 style="margin-top:0">A. 参数区</h4>
+  <p style="margin-bottom:14px">时长（1 / 2 / 3 / 5 分钟）· 语料（键位串 / 英文单词 / 英文短文 / 数字与符号）· 是否显示虚拟键盘。<b>语料决定难度系数</b>，教师统一指定后全班可比。</p>
+  <h4>B. 计时与指标区</h4>
+  <p style="margin-bottom:14px">大字显示 <b>剩余时间</b>、<b>CPM</b>、<b>准确率</b>、<b>进度条</b>。全部实时刷新，无延迟感。</p>
+  <h4>C. 文本区</h4>
+  <p style="margin-bottom:14px">三行展示，当前字符带<b>光标色块</b>；已打对的字变绿，打错的字标红底，且<b>必须打对才能前进</b>（或按设置允许跳过并记为错误）。退回删除会记为一次修正，计入总击键。</p>
+  <h4>D. 结束成绩单</h4>
+  <p style="margin:0">时间到或文本打完即结算：CPM、WPM、准确率、正确/错误字符数、得分、本次在班级的排名变化。<b>成绩单直接带"再来一次"与"上报"按钮</b>。</p>
+</div>
+
+<h3>④ 单词冲刺：60 秒</h3>
+<p>屏幕中央一次显示一个单词，打对即换下一个。词库三级：<span class="tag gray">三年级 60 词</span> <span class="tag gray">四—六年级 120 词</span> <span class="tag gray">初中 180 词</span>。倒计时结束统计"打对词数 / 平均每词耗时 / 准确率"。</p>
+
+<h2 id="s5"><span class="num">05</span>评分口径与排行榜规则</h2>
+
+<p>排行榜一旦不公平，整个系统的教学价值就崩了。规则必须满足三条：<b>可比</b>（不同练习能放在一起比）、<b>防刷</b>（重复练同一段不能无限加分）、<b>可解释</b>（能对家长和学校讲清楚）。</p>
+
+<h3>单次成绩得分</h3>
+
+<div class="formula">
+<span class="c">有效 CPM</span> = 正确字符数 ÷ 实际用时（分钟）　<span class="m">// 英文/字符模式</span><br>
+<span class="c">有效 字/分</span> = 打对字数 ÷ 实际用时（分钟）　<span class="m">// 中文跟打</span><br>
+<span class="c">单次得分</span> = 有效速度 × <span class="g">难度系数</span><br>
+<span class="m">// 准确率门槛：准确率 &lt; 85% 的成绩标记为「未达标」，不计入排行榜</span><br>
+<span class="m">// 有效 CPM 已按正确字符计算，打错不涨分，天然抑制乱打</span>
+</div>
+
+<div class="grid3">
+  <div class="tile">
+    <div class="ico" style="font-size:19px">✅</div>
+    <h4>为什么用有效 CPM 而不是总 CPM</h4>
+    <p>总 CPM 把错字也算进速度，"狂敲乱打"能刷出高分。只算正确字符，乱打等于原地踏步。</p>
+  </div>
+  <div class="tile">
+    <div class="ico" style="font-size:19px">⚖️</div>
+    <h4>为什么乘难度系数</h4>
+    <p>基准键的字母串当然比英文短文快。不校正难度，全校榜单会变成"谁练的关最简单谁第一"。</p>
+  </div>
+  <div class="tile">
+    <div class="ico" style="font-size:19px">🚫</div>
+    <h4>为什么设 85% 门槛</h4>
+    <p>低于 85% 说明还没形成正确动作定型，此时的高速度是负资产。拦住它，就是教学导向。</p>
+  </div>
+</div>
+
+<h3>学生总分（榜单排序依据）</h3>
+
+<div class="formula">
+<span class="c">个人总分</span> = Σ ( 各模式 <span class="g">历史最高单次得分</span> )　键位 + 速度 + 单词 + 中文<br>
+<span class="m">// 同一模式只取最高一次 → 重复刷同一段文本不会累加，防刷</span><br>
+<span class="m">// 落字游戏不进总分（随机性大），只进手速榜</span><br>
+<span class="m">// 键位闯关按「最高通过关卡」的得分计入，不再叠加各关</span>
+</div>
+
+<h3>不同维度的榜单</h3>
+
+<table class="tbl">
+  <thead><tr><th style="width:130px">榜单</th><th style="width:190px">排序依据</th><th>使用场景</th></tr></thead>
+  <tbody>
+    <tr><td><b>总分榜</b> <span class="tag blue">默认</span></td><td>个人总分（各模式最高分之和）</td><td>大屏主榜、班级评比、学期评优</td></tr>
+    <tr><td>速度榜</td><td>速度练习的最高有效 CPM</td><td>单元测评、速度达标检测</td></tr>
+    <tr><td>准确率榜</td><td>速度练习的最高准确率（样本 ≥ 100 字符）</td><td>纠正"求快不求准"，专门表扬稳的孩子</td></tr>
+    <tr><td>手速榜</td><td>落字游戏的平均反应时间（毫秒，越小越好）</td><td>游戏环节的竞赛榜</td></tr>
+    <tr><td>进步榜</td><td>本周得分 − 上周得分</td><td>关注后进生，这是最该被看见的一张榜</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <span class="t">榜单口径必须全班统一</span>
+  速度榜只有在<b>同一语料、同一时长</b>下才真正可比。系统在教师端提供"统一测评"开关：开启后全班被锁定为同一套参数，成绩单上会标注"统一测评"，榜单只取这类成绩。日常自由练习的成绩照常记录，但不进统一榜单。
+</div>
+
+<h2 id="s6"><span class="num">06</span>教师端与实时大屏</h2>
+
+<h3>教师端：四个页签</h3>
+
+<table class="tbl">
+  <thead><tr><th style="width:120px">页签</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>课堂总览</td>
+      <td>顶部四张指标卡（在线人数 / 平均 CPM / 平均准确率 / 达标人数）；中部<b>实时进度墙</b>（每人一张卡：姓名、当前模式、进度条、CPM、准确率、在线状态）；右侧<b>实时动态</b>（进入课堂、达成新纪录、连击、掉线）。</td></tr>
+    <tr><td>排行榜</td>
+      <td>五种榜单切换；可按<b>全班 / 全年级 / 全校</b>范围切换；每行显示名次、姓名、班级、总分、CPM、准确率、较上次变化。</td></tr>
+    <tr><td>学情分析</td>
+      <td>错键热力图、指法分区错误分布、模式参与度、速度分布直方图、班级横向对比、个人成长曲线（可下钻到单个学生）。</td></tr>
+    <tr><td>课堂管理</td>
+      <td>统一测评参数设置（速度练习 / 中文跟打）、学校班级维护、<b>练习文本库</b>（导入中文文本）、学生名单查看、清空本轮数据、导出 Excel/CSV、大屏入口二维码。</td></tr>
+    <tr><td>账号与权限</td>
+      <td>教师端凭<b>访问码</b>登录，分两档：<b>超级管理员</b>可导入/修改学校班级名单（支持 Excel/CSV，先预览再确认）；<b>普通教师</b>只用课堂功能、不能改名单。登录 12 小时内有效，关页即失效。学生端与大屏无需登录。</td></tr>
+  </tbody>
+</table>
+
+<h3>大屏看板：投屏专用</h3>
+
+<p>独立页面 <code>/screen</code>，设计目标是"最后一排也能看清"，因此：</p>
+
+<ul>
+  <li><b>三栏布局</b>：左榜单（前 10 名，名次变化有箭头动画）、中进度墙（按班级分组，每人一个方块，颜色表示进度）、右动态流（最新 12 条，自动滚动）。</li>
+  <li><b>字号随屏宽缩放</b>，1920×1080 与 1366×768 投影都能满屏显示，无横向滚动条。</li>
+  <li><b>零操作按钮</b>：投屏时鼠标不该出现在画面里。所有操作在教师端完成。</li>
+  <li><b>冠军高亮</b>：总分第一名卡片带金色边框与光效，动态流出现"新纪录"时全屏短暂提示。</li>
+  <li><b>离线可见</b>：学生掉线后卡片变灰但仍保留 20 分钟，老师能看到"谁掉出去了"而不是卡片突然消失。</li>
+</ul>
+
+<div class="note">
+  <span class="t">技术上的实时性</span>
+  采用 SSE（Server-Sent Events）长连接推送，服务端有变化立即广播，<b>不是前端定时轮询</b>。学生按下最后一个键到榜单刷新，延迟在 100 毫秒量级，学生能真切感受到"我上榜了"的即时反馈。
+  <br><br>
+  关键的一点是<b>只推变化的那一行</b>：学生进课堂、交成绩、改为在线状态，服务端都只发自己这一条（约 0.4—1.3 KB），
+  不再把整份排行榜和整张在线列表推给每台机器。名次由学生端、教师端、大屏三端用同一份合并逻辑就地重算。
+  这样一来，1 个班用和 5,000 人同时用，单次推送量都一样，
+  <b>不会出现"人一多、大屏就卡成幻灯片"的情况</b>。
+</div>
+
+<h2 id="s6b"><span class="num">06+</span>数据放在哪：SQLite 而不是 JSON</h2>
+
+<p>一台服务器扛全县学生，第一件事是把"每次提交都读写一整个 JSON 文件"换掉 —— 那个做法在几百人以下没问题，上千人就会互相覆盖、越写越慢。</p>
+
+<table>
+  <thead><tr><th style="width:150px">方案</th><th>能不能用</th><th>结论</th></tr></thead>
+  <tbody>
+    <tr><td><b>SQLite（现在用的）</b></td><td>能。单文件数据库，Node 22 内置驱动，零安装</td><td><b>选它。</b>写入 0.3 毫秒一条，30 万条成绩冷启动 0.7 秒，看板查询 46 毫秒；支持热备份与断电恢复（WAL）。</td></tr>
+    <tr><td>MySQL / PostgreSQL</td><td>能，但要装服务、配账号</td><td>只有当"多个校区各开一套、再集中汇总到县里"时才值得上，那时才有并发写多库的需求。</td></tr>
+    <tr><td>纯 JSON 文件</td><td>几千人就开始吃力</td><td>每次提交全量序列化，多台机器同时写会互相覆盖。已全部迁移掉。</td></tr>
+  </tbody>
+</table>
+
+<p>表设计是"<b>明细只追加 + 写入时顺便算好汇总</b>"：交一次成绩，一个事务里写明细记录、更新这个人的汇总行、累加错键统计 —— 看板永远只读汇总，不用回头扫全部明细。</p>
+
+
+<h2 id="s7"><span class="num">07</span>错键热力：把打字数据变成教学依据</h2>
+
+<p>这是本系统对教研最有价值的部分，也是普通打字软件没有的。</p>
+
+<p>系统记录<b>每一个击键的目标字符与实际字符</b>，在教师端聚合成整班/整校的错键分布，用虚拟键盘热力图呈现：颜色越红表示该键错误率越高。老师投屏后可以直接说：</p>
+
+<div class="card" style="border-left:3px solid #dc2626">
+  <p style="margin:0;font-size:15px;color:#1a1d23">"全班在 <b style="color:#dc2626">B</b> 和 <b style="color:#dc2626">N</b> 这两个键上错了 37 次，都是食指该管的位置 —— 现在我们专门练 20 个 B 和 N。"</p>
+</div>
+
+<table class="tbl">
+  <thead><tr><th style="width:170px">分析维度</th><th>回答的教学问题</th></tr></thead>
+  <tbody>
+    <tr><td>错键热力图</td><td>全班在哪些键上集体出错？是某一排还是某个手指？</td></tr>
+    <tr><td>左右手错误比</td><td>是普遍问题，还是个别学生左手不熟？（左撇子的分布也能看出）</td></tr>
+    <tr><td>混淆对 Top 10</td><td>最常见的混淆是"目标 B 打成 V"这类邻键误触，还是"目标 M 打成 N"这类手指错位？前者是定位问题，后者是分工问题，<b>训练方法完全不同</b>。</td></tr>
+    <tr><td>错误类型分布</td><td>误触邻键 / 手指错位 / 大小写 / 漏键 / 多余击键，五类占比。</td></tr>
+    <tr><td>速度—准确率象限图</td><td>把全班画在"快而不准 / 又快又准 / 慢而准 / 待提升"四个象限，分层布置任务。</td></tr>
+    <tr><td>个人成长曲线</td><td>某个学生 5 次练习的 CPM 与准确率双线走势，用于个别辅导与家校沟通。</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s8"><span class="num">08</span>技术架构与数据模型</h2>
+
+<div class="arch">
+  <div class="arch-row">
+    <div class="arch-box client"><b>学生端</b><span>浏览器 / 平板</span></div>
+    <div class="arch-box client"><b>教师端</b><span>浏览器</span></div>
+    <div class="arch-box client"><b>大屏看板</b><span>投影 / 一体机</span></div>
+  </div>
+  <div class="arch-label">↑ HTTP 接口 ＋ SSE 实时推送（同一局域网，无需外网）</div>
+  <div class="arch-row">
+    <div class="arch-box server" style="min-width:300px"><b>教师机 · Node 服务</b><span>静态托管 · 练习上报 · 成绩聚合 · 榜单计算 · 二维码 · 导出</span></div>
+  </div>
+  <div class="arch-label">↓ 落盘</div>
+  <div class="arch-row">
+    <div class="arch-box data"><b>record 表</b><span>成绩明细（只追加）</span></div>
+    <div class="arch-box data"><b>person 表</b><span>每人汇总</span></div>
+    <div class="arch-box data"><b>key_hit / key_err</b><span>错键聚合</span></div>
+    <div class="arch-box data"><b>meta 表 ＋ live</b><span>配置 · 实时状态</span></div>
+  </div>
+</div>
+
+<h3>技术选型</h3>
+<table class="tbl">
+  <thead><tr><th style="width:140px">层面</th><th>选择</th><th>理由</th></tr></thead>
+  <tbody>
+    <tr><td>服务端</td><td>Node.js 内置模块，<b>零第三方依赖</b></td><td>机房电脑不需要联网装包，拷过去双击就能跑，也不会因为 npm 源被墙而装不上。</td></tr>
+    <tr><td>数据库</td><td><b>SQLite</b>（Node 22 内置 <code>node:sqlite</code>）</td><td>
+      仍然<b>不用装任何数据库服务</b>，拷过去双击就能跑。成绩只追加一行，提交耗时 1~2 毫秒，
+      与历史数据多少无关（旧版 JSON 文件在 30 万条时要 4 秒多，一个班交卷就卡住服务）。
+      另设 person 汇总表与错键聚合表，榜单和学情直接读汇总，不必每次扫全表。<br>
+      <b>什么时候才需要 MySQL</b>：一台机器上跑多份服务、或要跨机共享同一份数据时。
+      单机单进程的集中部署，SQLite 完全扛得住几千人。</td></tr>
+    <tr><td>实时通信</td><td>SSE</td><td>比 WebSocket 简单（纯 HTTP），断线自动重连，单向推送正合适。</td></tr>
+    <tr><td>前端</td><td>原生 HTML/CSS/JS，无框架</td><td>机房老机器、旧版浏览器也能跑；不依赖 CDN，断网可用。</td></tr>
+    <tr><td>部署</td><td>教师机局域网，默认端口 8090</td><td>一台机器开局域网广播，学生扫码即入；不涉及数据出校，符合学生信息保护要求。</td></tr>
+  </tbody>
+</table>
+
+<h3>数据模型</h3>
+
+<table class="tbl">
+  <thead><tr><th style="width:150px">数据</th><th>字段</th></tr></thead>
+  <tbody>
+    <tr><td>成绩记录<br><code>records[]</code></td>
+      <td><code>id</code> 唯一键（学校|班级|姓名）、<code>school</code>、<code>class</code>、<code>name</code>、<code>mode</code>（模式）、<code>level</code>（关卡/语料）、<code>cpm</code>、<code>wpm</code>、<code>acc</code> 准确率、<code>correct</code> 正确字符、<code>wrong</code> 错误字符、<code>sec</code> 用时、<code>diff</code> 难度系数、<code>score</code> 得分、<code>qualified</code> 是否达标、<code>unified</code> 是否统一测评、<code>ts</code> 时间</td></tr>
+    <tr><td>实时状态<br><code>live{}</code></td>
+      <td><code>id</code>、<code>school</code>、<code>class</code>、<code>name</code>、<code>mode</code>、<code>modeName</code>、<code>progress</code> 0—1、<code>cpm</code>、<code>acc</code>、<code>keys</code> 累计击键、<code>online</code>、<code>lastSeen</code></td></tr>
+    <tr><td>错键统计<br><code>keys{}</code></td>
+      <td>按"目标字符 → { 正确次数, 误打成的字符: 次数 }"聚合，支持按学校、班级、时间范围查询</td></tr>
+    <tr><td>动态流<br><code>feed[]</code></td>
+      <td><code>id</code>、<code>time</code>、<code>name</code>、<code>text</code>、<code>kind</code>（join / record / pass / streak / offline）</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s9"><span class="num">09</span>课堂使用建议与部署</h2>
+
+<h3>部署（教师机，5 分钟）</h3>
+<ol>
+  <li>把 <code>打字练习系统-联网版</code> 文件夹拷到教师机任意位置。</li>
+  <li>双击 <code>start.bat</code>（需已装 Node.js）。控制台会打印<b>三个地址</b>：教师端、大屏、学生端。</li>
+  <li>教师端浏览器打开 <code>http://localhost:8090/teacher</code>；投影机打开 <code>/screen</code>。</li>
+  <li>学生端地址形如 <code>http://192.168.x.x:8090/</code>，大屏会显示二维码，学生扫码直接进。</li>
+</ol>
+
+<div class="note key">
+  <span class="t">机房网络的两个坑</span>
+  ① 学生机需要和教师机在<b>同一网段</b>；② 教师机防火墙要放行端口（启动脚本会尝试自动添加规则，无管理员权限时需手动放行）。这两条写在启动时的控制台提示里。
+</div>
+
+<h3>分学段建议课时安排</h3>
+<table class="tbl">
+  <thead><tr><th style="width:100px">学段</th><th style="width:190px">重点模式</th><th>课堂节奏建议（40 分钟）</th></tr></thead>
+  <tbody>
+    <tr><td>三—四年级</td><td>键位闯关 + 落字游戏</td><td>5 分钟指法复习 → 15 分钟键位闯关（过关制）→ 10 分钟落字游戏 → 5 分钟看榜单讲评 → 5 分钟记录</td></tr>
+    <tr><td>五—六年级</td><td>速度练习 + 单词冲刺</td><td>5 分钟落字热身 → 20 分钟速度练习（统一测评 2 分钟 × 2 次）→ 10 分钟单词冲刺比赛 → 5 分钟学情讲评</td></tr>
+    <tr><td>七—九年级</td><td>速度练习（短文）+ 数字符号</td><td>3 分钟热身 → 25 分钟短文速度练习 + 键位第 5 关 → 10 分钟错键分析讲评 → 2 分钟留档</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <span class="t">别把排行榜变成压力源</span>
+  建议大屏默认显示<b>前 10 名 + 全班平均进度</b>，不滚动显示倒数名单。同时把"进步榜"作为每周必讲的一张榜 —— 打字是技能训练，最容易伤到的是本来就慢的孩子。
+</div>
+
+<h2 id="s10"><span class="num">10</span>可扩展方向</h2>
+
+<table class="tbl">
+  <thead><tr><th style="width:170px">方向</th><th>说明</th><th style="width:90px">优先级</th></tr></thead>
+  <tbody>
+    <tr><td>中文拼音输入</td><td>接入拼音词库，练习中文录入（需处理候选框，指标改为"上屏字数/分钟"）。</td><td><span class="tag amber">中</span></td></tr>
+    <tr><td>班级作业</td><td>教师布置"本周完成 3 次 2 分钟测评"，学生端显示待完成与截止时间。</td><td><span class="tag green">高</span></td></tr>
+    <tr><td>学生成长档案</td><td>一学期速度曲线、达标次数，可导出为 PDF 附在素质报告单后。</td><td><span class="tag green">高</span></td></tr>
+    <tr><td>县域汇总看板</td><td>多校数据上报到县平台，形成学校间横向对比（需部署公网服务）。</td><td><span class="tag amber">中</span></td></tr>
+    <tr><td>听打 / 看打分离</td><td>加入语音播报，练"听打"，这是真实办公场景的核心能力。</td><td><span class="tag gray">低</span></td></tr>
+    <tr><td>专用指法动作识别</td><td>摄像头识别手指动作，判定是否用了正确手指（成本高，暂不做）。</td><td><span class="tag gray">低</span></td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  全县中小学生打字练习系统 · 设计方案 v1.0　|　配套实现：<code>打字练习系统-联网版/</code>　|　零第三方依赖，教师机单机可跑，数据不出校
+</div>
+
+</div>
+</body>
+</html>

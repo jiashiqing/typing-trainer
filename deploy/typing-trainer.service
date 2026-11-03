@@ -1,0 +1,46 @@
+[Unit]
+Description=Typing Trainer (打字练习系统)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=typing
+Group=typing
+WorkingDirectory=__ROOT__
+
+# ---- 部署参数（setup.sh 会按实际情况改写下面三行）----
+Environment=PUBLIC_URL=__PUBLIC_URL__
+Environment=PORT=__PORT__
+# 正常情况只监听回环：外网一律走 Nginx，Node 端口不直接暴露
+Environment=BIND_HOST=__BIND_HOST__
+
+# ---- 固定参数 ----
+Environment=NO_OPEN=1
+# 公网服务器日志会长期留档，不在日志里打印访问码
+Environment=HIDE_CODES=1
+# 停止服务用 systemctl，不开放 HTTP 停止接口
+Environment=ENABLE_SHUTDOWN=0
+Environment=NODE_ENV=production
+
+ExecStart=/usr/bin/node __ROOT__/server.js
+Restart=always
+RestartSec=3
+# 几千人同时挂 SSE 会把默认 1024 用光
+LimitNOFILE=65535
+KillSignal=SIGINT
+TimeoutStopSec=20
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=typing-trainer
+
+# ---- 轻量加固 ----
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=__ROOT__/data
+
+[Install]
+WantedBy=multi-user.target
