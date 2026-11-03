@@ -10,7 +10,7 @@
 1. [两种部署脚本的分工](#1-两种部署脚本的分工)
 2. [第一步：把项目推上 GitHub / Gitee](#2-第一步把项目推上-github--gitee)
 3. [GitHub 还是 Gitee](#3-github-还是-gitee)
-4. [私有仓库怎么让服务器有权限拉](#4-私有仓库怎么让服务器有权限拉)
+4. [（可选）私有仓库怎么让服务器有权限拉](#4-可选私有仓库怎么让服务器有权限拉)
 5. [服务器首次接上远程仓库](#5-服务器首次接上远程仓库)
 6. [日常部署](#6-日常部署)
 7. [回滚的三种情况](#7-回滚的三种情况)
@@ -118,7 +118,10 @@ git remote set-url origin https://gitee.com/你的用户名/typing-trainer.git
 
 ---
 
-## 4. 私有仓库怎么让服务器有权限拉
+## 4. （可选）私有仓库怎么让服务器有权限拉
+
+> `jiashiqing/typing-trainer` 现在是**公开仓库**，这一整节都可以跳过 —— 公开仓库 `git clone` / `git fetch` 不需要任何密钥或口令。
+> 只有哪天你把仓库改回私有，才需要往下看。
 
 **不要**把账号密码或 Token 写进 URL（会明文躺在 `.git/config` 里，任何能读这个文件的人都能看到）。
 
@@ -185,14 +188,14 @@ git remote set-url origin git@github.com:jiashiqing/typing-trainer.git
 
 ```bash
 mkdir -p /data/web && cd /data/web
-git clone git@github.com:jiashiqing/typing-trainer.git typing-trainer
+git clone https://github.com/jiashiqing/typing-trainer.git typing-trainer
 cd typing-trainer
 sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 ```
 
 要点：
 
-- 私有仓库**必须先做第 4 节的 Deploy Key**，否则 clone 会要账号密码
+- 仓库是**公开**的，`https://` 地址 clone 不需要任何账号口令；哪天改回私有，再按第 4 节配 Deploy Key
 - 克隆下来没有 `data/` —— 第一次启动会自动建库、自动初始化学校名单，这是正常的
 - `deploy/*.sh` 的可执行位在仓库里已经设好（`100755`），clone 后 `bash deploy/setup.sh` 或 `./deploy/setup.sh` 都能跑
 - 目录名、systemd 服务名、仓库名统一为 `typing-trainer`，查状态用 `systemctl status typing-trainer`
@@ -229,7 +232,7 @@ scp deploy\pull-deploy.sh root@43.142.117.18:/data/web/typing-trainer/deploy/
 
 ```bash
 cd /data/web/typing-trainer
-sudo bash deploy/pull-deploy.sh --init git@github.com:jiashiqing/typing-trainer.git
+sudo bash deploy/pull-deploy.sh --init https://github.com/jiashiqing/typing-trainer.git
 ```
 
 它做这几件事：
@@ -413,9 +416,9 @@ git commit -m "初始版本"
 git tag -a v1.0 -m "首个线上版本"
 git push -u origin main --tags
 
-# ② 全新服务器：先 clone（私有仓库要先配第 4 节的 Deploy Key）
+# ② 全新服务器：先 clone（公开仓库，不需要密钥）
 mkdir -p /data/web && cd /data/web
-git clone git@github.com:jiashiqing/typing-trainer.git typing-trainer
+git clone https://github.com/jiashiqing/typing-trainer.git typing-trainer
 cd typing-trainer
 
 # ③ 首次部署（装 Node、建账号、写 systemd、配 Nginx、开端口）

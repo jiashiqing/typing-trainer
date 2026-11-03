@@ -280,7 +280,7 @@ do_init() {
 
   step "拉取远程"
   if ! git fetch origin --prune 2>&1 | sed 's/^/    /'; then
-    die "git fetch 失败。私有仓库需要部署密钥，见 deploy/README-git.md"
+    die "git fetch 失败。先确认服务器能访问 github.com（curl -I https://github.com）；若仓库已改回私有，需要配部署密钥，见 deploy/README-git.md"
   fi
 
   local b; b="$(detect_branch)"

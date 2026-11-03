@@ -4,7 +4,7 @@
 
 **零依赖**：只用 Node.js 内置模块，不需要 `npm install`，没有第三方包。
 
-**仓库**：<https://github.com/jiashiqing/typing-trainer>（私有仓库，服务器拉取需先配 Deploy Key，见 [deploy/README-git.md](deploy/README-git.md)）
+**仓库**：<https://github.com/jiashiqing/typing-trainer>（公开仓库，任何服务器 `git clone` 直接拉，不需要账号口令）
 
 ---
 
@@ -68,13 +68,16 @@ Windows 上也可以直接双击 `start.bat`；`查看服务状态.bat` / `停�
 
 ```bash
 # 服务器上，以 root 执行
-git clone git@github.com:jiashiqing/typing-trainer.git /data/web/typing-trainer
+apt update && apt install -y git      # 全新系统可能没装 git
+git clone https://github.com/jiashiqing/typing-trainer.git /data/web/typing-trainer
 cd /data/web/typing-trainer
 sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 ```
 
 > `APP_DIR` 写成当前目录，就是「原地部署」：不拷贝代码，数据也留在原地。
 > 仓库名、目录名、systemd 服务名统一为 `typing-trainer`，查状态用 `systemctl status typing-trainer`。
+> 云服务器（腾讯云 / 阿里云）还要在**安全组**入站规则里放行 `8090`，否则装完了外面也打不开。
+> 脚本跑完会打印学生端 / 教师端 / 大屏地址和网页口令，照着敲进浏览器即可。
 
 ### 日常更新
 
