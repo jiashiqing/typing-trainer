@@ -374,9 +374,14 @@ do_rollback() {
 
 # ---------------------------------------------------------------- 主流程
 main() {
-  [ "$(id -u)" -eq 0 ] || die "请用 root 运行：sudo bash $0"
   [ -d "$APP_DIR" ] || die "目录不存在：$APP_DIR"
   cd "$APP_DIR"
+
+  # 只读动作不要求 root，方便本地/普通用户先看看情况
+  case "$ACTION" in
+    list|status) ;;
+    *) [ "$(id -u)" -eq 0 ] || die "请用 root 运行：sudo bash $0" ;;
+  esac
 
   case "$ACTION" in
     init)   do_init "$INIT_URL"; exit 0 ;;
