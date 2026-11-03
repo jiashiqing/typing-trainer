@@ -177,9 +177,31 @@ git remote set-url origin git@github.com:jiashiqing/typing-trainer.git
 
 ## 5. 服务器首次接上远程仓库
 
+分两种情况，看你服务器上有没有旧代码。
+
+### 5.0 全新服务器：直接 clone（最省事）
+
+服务器上还没有代码，就别用 `--init`，克隆下来就是一套完整可跑的：
+
+```bash
+mkdir -p /data/web && cd /data/web
+git clone git@github.com:jiashiqing/typing-trainer.git dazi-trainer
+cd dazi-trainer
+sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
+```
+
+要点：
+
+- 私有仓库**必须先做第 4 节的 Deploy Key**，否则 clone 会要账号密码
+- 克隆下来没有 `data/` —— 第一次启动会自动建库、自动初始化学校名单，这是正常的
+- `deploy/*.sh` 的可执行位在仓库里已经设好（`100755`），clone 后 `bash deploy/setup.sh` 或 `./deploy/setup.sh` 都能跑
+- 目录名 `dazi-trainer` 沿用线上现有部署，便于对照；**服务名固定是 `typing-trainer`**（`setup.sh` 里写死），查状态用 `systemctl status typing-trainer`
+
+### 5.1 已有旧代码的老目录（从手工部署转成 git 部署）
+
 你现在的服务器目录 `/data/web/dazi-trainer` 里有代码、有数据库，但**还不是 git 仓库**。
 
-### 5.1 先把脚本传上去
+### 5.2 先把脚本传上去
 
 鸡生蛋问题：脚本本身在 git 里，但服务器还没接上 git。所以先手动传一次：
 
@@ -188,7 +210,7 @@ cd D:\工作空间\WorkBuddy工作空间\AI×教师\打字练习系统-联网版
 scp deploy\pull-deploy.sh root@43.142.117.18:/data/web/dazi-trainer/deploy/
 ```
 
-### 5.2 执行关联
+### 5.3 执行关联
 
 ```bash
 cd /data/web/dazi-trainer
@@ -204,7 +226,7 @@ sudo bash deploy/pull-deploy.sh --init git@github.com:jiashiqing/typing-trainer.
 
 跑完它会告诉你「原有数据库还在，没被动过」。**如果它说 data/ 里没有数据库，立刻停下**，说明路径不对，先去确认库在哪。
 
-### 5.3 init 之后检查一遍
+### 5.4 init 之后检查一遍
 
 ```bash
 sudo bash deploy/pull-deploy.sh --status
@@ -370,22 +392,24 @@ sudo systemctl start typing-trainer
 ## 附：从零到上线的完整顺序
 
 ```bash
-# ① 本地
-git init && git add . && git status          # 确认没有 data/
+# ① 本地：把代码推上 GitHub（已完成，仓库在 github.com/jiashiqing/typing-trainer）
+git add -A && git status                    # 确认没有 data/
 git commit -m "初始版本"
 git tag -a v1.0 -m "首个线上版本"
-git remote add origin <仓库地址>
 git push -u origin main --tags
 
-# ② 服务器：首次部署（装环境、配 Nginx、开端口）
-cd /data/web/dazi-trainer
-sudo -E APP_NAME=typing-trainer APP_DIR=/data/web/dazi-trainer \
-     ENTRY=server.js WEB_PORT=8090 bash deploy/setup.sh
+# ② 全新服务器：先 clone（私有仓库要先配第 4 节的 Deploy Key）
+mkdir -p /data/web && cd /data/web
+git clone git@github.com:jiashiqing/typing-trainer.git dazi-trainer
+cd dazi-trainer
 
-# ③ 服务器：接上远程仓库
-scp 一次 pull-deploy.sh                          # 从本地传
-sudo bash deploy/pull-deploy.sh --init <仓库地址>
+# ③ 首次部署（装 Node、建账号、写 systemd、配 Nginx、开端口）
+#    原地部署：APP_DIR 设为当前目录，不拷贝、不动 data/
+sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 
-# ④ 以后每次更新
-本地 push → 服务器 sudo bash deploy/pull-deploy.sh
+# ④ 以后每次更新：本地 push → 服务器拉
+#   本地：git push origin main --tags
+sudo bash deploy/pull-deploy.sh
 ```
+
+> 服务器上**已经有旧代码**（不是全新机器）时，跳过 ② 的 clone，改用 5.1—5.4 的 `--init` 流程，避免数据库被覆盖。

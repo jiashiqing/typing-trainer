@@ -4,6 +4,8 @@
 
 **零依赖**：只用 Node.js 内置模块，不需要 `npm install`，没有第三方包。
 
+**仓库**：<https://github.com/jiashiqing/typing-trainer>（私有仓库，服务器拉取需先配 Deploy Key，见 [deploy/README-git.md](deploy/README-git.md)）
+
 ---
 
 ## 功能
@@ -32,8 +34,8 @@
 ## 快速开始（本地）
 
 ```bash
-git clone <仓库地址> typing-trainer
-cd typing-trainer
+git clone https://github.com/jiashiqing/typing-trainer.git dazi-trainer
+cd dazi-trainer
 node server.js
 ```
 
@@ -66,12 +68,13 @@ Windows 上也可以直接双击 `start.bat`；`查看服务状态.bat` / `停�
 
 ```bash
 # 服务器上，以 root 执行
-sudo -E APP_NAME=typing-trainer \
-     APP_DIR=/data/web/typing-trainer \
-     ENTRY=server.js \
-     WEB_PORT=8090 \
-     bash deploy/setup.sh
+git clone git@github.com:jiashiqing/typing-trainer.git /data/web/dazi-trainer
+cd /data/web/dazi-trainer
+sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 ```
+
+> `APP_DIR` 写成当前目录，就是「原地部署」：不拷贝代码，数据也留在原地。
+> 服务名固定为 `typing-trainer`（`systemctl status typing-trainer`），目录名是 `dazi-trainer`，两者不同是历史原因，不影响使用。
 
 ### 日常更新
 
@@ -91,7 +94,7 @@ sudo bash deploy/pull-deploy.sh --rollback # 退一个版本
 ## 目录结构
 
 ```
-typing-trainer/
+dazi-trainer/
 ├── server.js              服务端：HTTP、SSE 推送、成绩计算、SQLite
 ├── lib/
 │   ├── store.js           SQLite 封装（node:sqlite）
