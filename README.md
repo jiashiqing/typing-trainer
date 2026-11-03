@@ -101,6 +101,32 @@ sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 - 手工看仓库状态用 `sudo git -C /data/web/typing-trainer status`；直接 `git status` 会报 `dubious ownership`（脚本已自动给它加 `safe.directory`，手工命令没这条）
 - 改代码**不在服务器上改**：本地改完 push，服务器拉
 
+#### 国内服务器拉不动 GitHub 怎么办
+
+看到 `GnuTLS recv error (-110): The TLS connection was non-properly terminated` 这个报错，是国内服务器连 GitHub 时 TLS 被中断，**不是仓库权限问题，也不是地址写错了**。三个办法，从快到稳：
+
+**① 套一个加速前缀**（十几秒搞定；clone 后 `origin` 就是这个地址，以后拉取也走加速）
+
+```bash
+git clone https://ghfast.top/https://github.com/jiashiqing/typing-trainer.git typing-trainer
+# 不通就换下面两个前缀，任选其一：
+#   https://ghproxy.net/https://github.com/jiashiqing/typing-trainer.git
+#   https://gh-proxy.com/https://github.com/jiashiqing/typing-trainer.git
+```
+
+**② Node 也别从 NodeSource 下**（同样会被卡住）。先用国内镜像把 Node 装好，`setup.sh` 检测到版本够了就直接跳过联网安装：
+
+```bash
+cd /tmp
+curl -fsSLO https://registry.npmmirror.com/-/binary/node/v22.20.0/node-v22.20.0-linux-x64.tar.xz
+sudo tar -xJf node-v22.20.0-linux-x64.tar.xz -C /usr/local --strip-components=1
+node -v      # 应输出 v22.20.0
+```
+
+> 若提示 `xz: command not found`，先 `sudo apt install -y xz-utils`。
+
+**③ 长期方案：Gitee 镜像。** Gitee 上「新建仓库 → 导入 GitHub 仓库」，同步完从 Gitee clone，国内通常几 MB/s。本地同时推两个 remote，见 [deploy/README-git.md](deploy/README-git.md) 第 3 节。
+
 ### 日常更新
 
 ```bash

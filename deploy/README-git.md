@@ -400,6 +400,9 @@ sudo systemctl start typing-trainer
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | `git fetch` 卡住或超时 | 拉的是 GitHub，国内线路差 | 换 Gitee 源，或配代理 |
+| `GnuTLS recv error (-110): The TLS connection was non-properly terminated` | 国内服务器连 GitHub 时 TLS 被中途掐断，**不是权限或地址问题** | 给地址套加速前缀：`https://ghfast.top/https://github.com/...`（备选 `ghproxy.net`、`gh-proxy.com`）；或改用 Gitee 镜像 |
+| `Debian 源 / NodeSource 下载失败` | 同一张网，`deb.nodesource.com` 也被卡 | 先用国内镜像装 Node ≥ 22.13 再跑 setup.sh：`curl -fsSLO https://registry.npmmirror.com/-/binary/node/v22.20.0/node-v22.20.0-linux-x64.tar.xz`，`sudo tar -xJf ... -C /usr/local --strip-components=1` |
+| `detected dubious ownership in repository` | 代码目录归运行账号 `typing`，而命令用 root / ubuntu 跑 | `pull-deploy.sh` 已自动放行；手工跑 git 时用 `sudo git -C <目录> ...` |
 | `Permission denied (publickey)` | Deploy Key 没配对，或 remote 用的还是 https | `git remote -v` 看地址；重配 ssh config |
 | `工作区有未提交的本地修改` | 服务器上手动改过文件 | 确认要丢弃加 `--force`；想保留就先 `git diff` 存下来 |
 | `服务 xxx 未注册` | 没跑过 setup.sh，或 `SVC` 名字不对 | `systemctl list-units \| grep -i typing` 确认真实名字，用 `SVC=真名` |
