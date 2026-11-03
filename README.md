@@ -127,6 +127,76 @@ node -v      # 应输出 v22.20.0
 
 **③ 长期方案：Gitee 镜像。** Gitee 上「新建仓库 → 导入 GitHub 仓库」，同步完从 Gitee clone，国内通常几 MB/s。本地同时推两个 remote，见 [deploy/README-git.md](deploy/README-git.md) 第 3 节。
 
+#### 全部可传参数
+
+**`deploy/setup.sh`（首次部署 / 改配置都跑它，重复执行安全）**
+
+位置参数（放在最后，`bash deploy/setup.sh` 后面）：
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `域名` | 无 | 传了自动申请 Let's Encrypt 证书并切 HTTPS；此时对外端口固定 80/443 |
+
+环境变量（**必须写在 `sudo -E` 之后、`bash` 之前**）：
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `APP_DIR` | `/opt/typing-trainer` | 装到哪；原地部署写 `"$(pwd)"` |
+| `WEB_PORT` | `80` | 对外端口；有域名时忽略 |
+| `BACKEND_PORT` | `8091` | Node 实际监听端口，只绑 127.0.0.1，不对外 |
+| `MODE` | `basic` | `basic` 整站口令 / `ipallow` 按来源 IP 白名单 / `open` 不设防 |
+| `WEB_USER` | `typing` | basic 模式的口令用户名 |
+| `WEB_PASS` | 随机 12 位 | basic 模式的口令密码，留空自动生成并打印 |
+| `ALLOW_CIDR` | 空 | `ipallow` 必填，空格分隔多个：`"10.0.0.0/8 192.168.31.0/24"` |
+| `EMAIL` | 空 | certbot 注册邮箱；不填则不注册（收不到到期提醒，续期照跑） |
+| `PUBLIC_URL` | 自动推导 | 手动指定对外地址，影响二维码和启动横幅；默认取公网 IP + 端口 |
+| `NO_NGINX` | `0` | `1`＝不装 Nginx，Node 直接对外；无口令无限速，仅临时测试 |
+| `I_KNOW` | `0` | `1`＝跳过「源码里带数据库却装到空目录」的防呆拦截 |
+
+服务名（`typing-trainer`）和运行账号（`typing`）是写死的，不接受传参。
+
+**`deploy/pull-deploy.sh`（日常更新 / 回滚）**
+
+| 用法 | 作用 |
+|---|---|
+| `sudo bash deploy/pull-deploy.sh` | 拉默认分支最新并部署 |
+| `... v1.0` 或 `... a1b2c3d` | 部署指定 tag / commit |
+| `... --rollback` | 退回上一次部署的版本 |
+| `... --rollback <sha>` | 退回指定版本 |
+| `... --list` | 看部署历史（不需要 root） |
+| `... --status` | 看当前版本比远程差多少（不需要 root） |
+| `... --init <仓库地址>` | 首次把已有目录接上远程仓库 |
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `APP_DIR` | 脚本所在目录的上一级 | 一般不用传 |
+| `SVC` | `typing-trainer` | systemd 服务名 |
+| `BRANCH` | 从 `origin/HEAD` 推断 | 主分支不叫 main/master 时用 |
+| `HEALTH` | `/api/ping` | 探活路径 |
+| `BACKUP_DIR` | `/data/backup` | 部署前数据库备份放哪 |
+| `HIST_KEEP` | `50` | 部署历史保留条数 |
+| `FORCE` | `0` | `1`＝丢弃工作区里未提交的本地修改 |
+| `SKIP_BACKUP` | `0` | `1`＝跳过部署前备份（不推荐） |
+
+**几个常用组合**
+
+```bash
+# 校内内网：只放行学校出口网段，学生完全无感
+sudo -E APP_DIR=/data/web/typing-trainer WEB_PORT=8090 MODE=ipallow \
+     ALLOW_CIDR="10.0.0.0/8 192.168.31.0/24" bash deploy/setup.sh
+
+# 自定义网页口令
+sudo -E APP_DIR=/data/web/typing-trainer WEB_PORT=8090 \
+     WEB_USER=teacher WEB_PASS='Rizhao2026' bash deploy/setup.sh
+
+# 有域名 + HTTPS + 到期提醒邮箱
+sudo -E APP_DIR=/data/web/typing-trainer EMAIL=you@qq.com \
+     bash deploy/setup.sh typing.example.com
+
+# 换端口重装（重复执行安全，data/ 不动）
+sudo -E APP_DIR=/data/web/typing-trainer WEB_PORT=8080 bash deploy/setup.sh
+```
+
 ### 日常更新
 
 ```bash
