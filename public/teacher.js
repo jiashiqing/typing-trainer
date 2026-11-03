@@ -706,14 +706,20 @@
     }).join('\n');
     /* 练习文本库 */
     paintMaterials();
-    /* 入口地址 */
+    /* 入口地址：服务端配了 PUBLIC_URL 就听它的；没配就用老师当前访问的地址
+       （同协议、同主机、同端口）。云服务器上服务端猜的网卡 IP 常是 172.17.x
+       这类内网地址，学生根本连不上 —— 浏览器地址栏反而是唯一一定正确的。 */
     if (T.net) {
-      $('mg-url').textContent = T.net.studentUrl;
+      var origin = location.origin + '/';
+      var sUrl = T.net.publicBase ? T.net.studentUrl : origin;
+      var tUrl = T.net.publicBase ? T.net.teacherUrl : origin + 'teacher';
+      var cUrl = T.net.publicBase ? T.net.screenUrl : origin + 'screen';
+      $('mg-url').textContent = sUrl;
       $('mg-links').innerHTML =
-        '<div>教师端 <b>' + esc(T.net.teacherUrl) + '</b></div>' +
-        '<div>大屏看板 <b>' + esc(T.net.screenUrl) + '</b></div>' +
+        '<div>教师端 <b>' + esc(tUrl) + '</b></div>' +
+        '<div>大屏看板 <b>' + esc(cUrl) + '</b></div>' +
         '<div>本机端口 <b>' + esc(String(T.net.port)) + '</b></div>';
-      drawQR(T.net.studentUrl);
+      drawQR(sUrl);
     }
     fillSchoolSelects();
   }

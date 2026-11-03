@@ -451,7 +451,17 @@ body{
     if (d.board) S.board = d.board;
     if (d.feed) S.feed = d.feed;
     if (d.keys) S.keys = d.keys;
-    if (d.net) S.net = d.net;
+    if (d.net) {
+      S.net = d.net;
+      /* 服务端没配 PUBLIC_URL 时给的是网卡 IP（云服务器上常是 172.17.x 内网），
+         学生连不上。大屏本身就是浏览器打开的，用地址栏的 origin 才不会错。 */
+      if (!d.net.publicBase) {
+        var o = location.origin + '/';
+        S.net.studentUrl = o;
+        S.net.teacherUrl = o + 'teacher';
+        S.net.screenUrl = o + 'screen';
+      }
+    }
     if (d.schools) S.schools = d.schools;
     if (d.accGate) S.accGate = d.accGate;
   }

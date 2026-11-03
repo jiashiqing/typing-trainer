@@ -15,6 +15,10 @@
      上一位同学的关卡留给下一位。 */
   var SS_UNLOCK = 'typing_key_unlocked';
 
+  /* 过关后自动进入下一关的等待时间。这期间学生点成绩单上任何按钮
+     （再打一次 / 完成 / 换人）都会关掉面板，自动跳转随之取消。 */
+  var AUTO_NEXT_MS = 3000;
+
   KD.getUnlocked = function () {
     var n = parseInt(sessionStorage.getItem(SS_UNLOCK) || '1', 10);
     if (!(n >= 1)) n = 1;
@@ -70,6 +74,7 @@
       err: 0,
       t0: 0,
       timer: null,
+      autoT: null,
       locked: false
     };
 
@@ -104,6 +109,7 @@
     /* ---- 开始某一关 ---- */
     function startLevel(lv) {
       clearInterval(S.timer);
+      if (S.autoT) { clearTimeout(S.autoT); S.autoT = null; }
       S.lvIdx = lv - 1;
       S.lv = D.KEY_LEVELS[S.lvIdx];
       S.seq = D.genKeyDrill(S.lv.chars, S.lv.need * 3, false).split('');
@@ -218,6 +224,9 @@
         var qualified = rec ? rec.qualified : (acc >= TY.S.accGate);
         if (qualified && S.lvIdx + 1 >= KD.getUnlocked()) KD.setUnlocked(S.lvIdx + 2);
 
+        var isLast = (S.lvIdx + 1) >= D.KEY_LEVELS.length;
+        var canAuto = !!qualified && !isLast;
+
         TY.showResult({
           badge: '第 ' + (S.lvIdx + 1) + ' 关通过',
           title: S.lv.name + ' · 打对 ' + S.done + ' 键',
@@ -229,8 +238,10 @@
           good: qualified,
           note: !ok ? '这台电脑暂时连不上教师机，成绩存在本机，稍后老师可以重新采集。'
             : (qualified
-              ? '第 ' + (S.lvIdx + 1) + ' 关已记录。' + (S.lvIdx + 1 < D.KEY_LEVELS.length
-                ? '下一关：' + D.KEY_LEVELS[S.lvIdx + 1].name + ' 已解锁。' : '五关全部通过，去试试速度练习吧。')
+              ? '第 ' + (S.lvIdx + 1) + ' 关已记录。' + (isLast
+                ? '五关全部通过，去试试速度练习吧。'
+                : AUTO_NEXT_MS / 1000 + ' 秒后自动进入第 ' + (S.lvIdx + 2) + ' 关：' +
+                  D.KEY_LEVELS[S.lvIdx + 1].name + '（点【完成】可以留在这里）')
               : '准确率 ' + Math.round(acc * 100) + '%，低于 ' + TY.accPct() +
                 '% 不记成绩。慢一点，先把每个键打准。'),
           onAgain: function () { startLevel(S.lvIdx + 1); },
@@ -238,11 +249,27 @@
           onDone: function () { if (window.APP) APP.go('hall'); }
         });
         paintLevels();
+
+        /* 过关后自动进入下一关。不设"取消按钮"：学生只要点了成绩单上
+           任何一个按钮，面板就会关掉，到点时这里发现面板已关就不跳了。 */
+        if (canAuto) {
+          if (S.autoT) clearTimeout(S.autoT);
+          S.autoT = setTimeout(function () {
+            S.autoT = null;
+            var m = document.getElementById('modal-result');
+            if (!m || !m.classList.contains('show')) return;
+            TY.hideResult();
+            startLevel(S.lvIdx + 2);
+          }, AUTO_NEXT_MS);
+        }
       });
     }
 
     startLevel(levelIdx + 1);
-    TY.onCleanup(function () { clearInterval(S.timer); });
+    TY.onCleanup(function () {
+      clearInterval(S.timer);
+      if (S.autoT) { clearTimeout(S.autoT); S.autoT = null; }
+    });
   };
 
 })();
