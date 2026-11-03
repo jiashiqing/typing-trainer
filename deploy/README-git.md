@@ -187,7 +187,9 @@ git remote set-url origin git@github.com:jiashiqing/typing-trainer.git
 服务器上还没有代码，就别用 `--init`，克隆下来就是一套完整可跑的：
 
 ```bash
-mkdir -p /data/web && cd /data/web
+sudo mkdir -p /data/web
+sudo chown "$(id -un):$(id -gn)" /data/web      # root 登录时这步可跳过；ubuntu 用户必须做
+cd /data/web
 git clone https://github.com/jiashiqing/typing-trainer.git typing-trainer
 cd typing-trainer
 sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
@@ -199,6 +201,7 @@ sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 - 克隆下来没有 `data/` —— 第一次启动会自动建库、自动初始化学校名单，这是正常的
 - `deploy/*.sh` 的可执行位在仓库里已经设好（`100755`），clone 后 `bash deploy/setup.sh` 或 `./deploy/setup.sh` 都能跑
 - 目录名、systemd 服务名、仓库名统一为 `typing-trainer`，查状态用 `systemctl status typing-trainer`
+- **用 `ubuntu` 这类普通账号时**：所有写 `/data`、跑 `setup.sh` / `pull-deploy.sh` 的命令前面加 `sudo`；装完代码属主是运行账号 `typing`，手工查仓库要写 `sudo git -C /data/web/typing-trainer status`
 
 ### 5.1 已有旧代码的老目录（从手工部署转成 git 部署）
 

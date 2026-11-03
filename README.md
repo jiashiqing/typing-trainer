@@ -79,6 +79,28 @@ sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 > 云服务器（腾讯云 / 阿里云）还要在**安全组**入站规则里放行 `8090`，否则装完了外面也打不开。
 > 脚本跑完会打印学生端 / 教师端 / 大屏地址和网页口令，照着敲进浏览器即可。
 
+#### 只有 ubuntu 账号、没有 root 权限怎么办
+
+云服务器现在多数默认给 `ubuntu` 用户，**不用切 root，也不用开 root 登录**，命令前加 `sudo` 就行。只有一处要额外做：先把 `/data/web` 交给 `ubuntu`，否则 `git clone` 写不进去。
+
+```bash
+sudo apt update && sudo apt install -y git
+
+sudo mkdir -p /data/web
+sudo chown "$(id -un):$(id -gn)" /data/web      # 让当前用户能往这个目录写
+
+mkdir -p /data/web && cd /data/web
+git clone https://github.com/jiashiqing/typing-trainer.git typing-trainer
+cd typing-trainer
+sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
+```
+
+装完之后代码目录归运行账号 `typing` 所有（服务以它身份跑，权限比 root 小），所以：
+
+- 以后更新一律 `sudo bash deploy/pull-deploy.sh`
+- 手工看仓库状态用 `sudo git -C /data/web/typing-trainer status`；直接 `git status` 会报 `dubious ownership`（脚本已自动给它加 `safe.directory`，手工命令没这条）
+- 改代码**不在服务器上改**：本地改完 push，服务器拉
+
 ### 日常更新
 
 ```bash

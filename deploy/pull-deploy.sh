@@ -53,6 +53,17 @@ warn() { echo -e "  ${c_warn}!${c_0} $*"; }
 die()  { echo -e "  ${c_err}✗ $*${c_0}"; exit 1; }
 
 APP_DIR="${APP_DIR:-$PWD}"
+
+# git ≥ 2.35 遇到「仓库属主 ≠ 当前用户」会拒绝操作，报
+#   fatal: detected dubious ownership in repository at '...'
+# 而 setup.sh 会把代码目录 chown 给运行账号（typing），本脚本却要用 root 跑，
+# 两边对不上 —— 不放行的话，装完第一次更新就挂在这里。
+# 做法：先探一下这个目录能不能正常读，读不了才为它单独放行（不放开全局）。
+# 已经放行过就读得通，不会重复追加。
+if [ -d "$APP_DIR/.git" ] && ! git -C "$APP_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+fi
+
 SVC="${SVC:-typing-trainer}"
 BRANCH="${BRANCH:-}"
 HEALTH="${HEALTH:-/api/ping}"
