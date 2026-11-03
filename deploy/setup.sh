@@ -11,6 +11,8 @@
 #
 #  可选环境变量（sudo 下请加 -E 传递）：
 #    APP_DIR      安装目录，默认 /opt/typing-trainer
+#    SVC          systemd 服务名，默认 typing-trainer（Nginx 配置文件名同此）
+#    RUN_USER     运行账号，默认 typing（不存在会自动创建系统账号）
 #    WEB_PORT     对外端口，默认 80（有域名时固定走 80/443）
 #    BACKEND_PORT Node 内部端口，默认 8091，不对外
 #    MODE         basic | ipallow | open，默认 basic
@@ -38,8 +40,11 @@ EMAIL="${EMAIL:-}"
 PUBLIC_URL="${PUBLIC_URL:-}"
 NO_NGINX="${NO_NGINX:-0}"
 I_KNOW="${I_KNOW:-0}"
-SVC="typing-trainer"
-RUN_USER="typing"
+SVC="${SVC:-typing-trainer}"
+RUN_USER="${RUN_USER:-typing}"
+# nginx 的 upstream / limit_req zone 名必须全局唯一，否则同一台机器装第二个实例时
+# nginx -t 会报 duplicate upstream / duplicate zone。用服务名派生，连字符转下划线。
+NGX_ID="${SVC//-/_}"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -236,6 +241,8 @@ sed -e "s|__ROOT__|$APP_DIR|g" \
     -e "s|__PORT__|$NODE_PORT|g" \
     -e "s|__BIND_HOST__|$BIND_HOST|g" \
     -e "s|__PUBLIC_URL__|$PUBLIC_URL|g" \
+    -e "s|__RUN_USER__|$RUN_USER|g" \
+    -e "s|__SVC__|$SVC|g" \
     -e "s|/usr/bin/node|$NODE_BIN|g" \
     "$SRC/deploy/typing-trainer.service" > "/etc/systemd/system/$SVC.service"
 
@@ -257,10 +264,10 @@ else
         WEB_PASS="$(head -c 9 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 12 2>/dev/null || true)"
         [ -n "$WEB_PASS" ] || WEB_PASS="tt$(date +%s)${RANDOM}"
       fi
-      htpasswd -bc /etc/nginx/typing.htpasswd "$WEB_USER" "$WEB_PASS" >/dev/null 2>&1 \
+      htpasswd -bc "/etc/nginx/${SVC}.htpasswd" "$WEB_USER" "$WEB_PASS" >/dev/null 2>&1 \
         || die "生成口令文件失败，确认 apache2-utils / httpd-tools 已安装"
-      chmod 644 /etc/nginx/typing.htpasswd
-      AUTH_LINE='auth_basic "打字练习系统"; auth_basic_user_file /etc/nginx/typing.htpasswd;'
+      chmod 644 "/etc/nginx/${SVC}.htpasswd"
+      AUTH_LINE="auth_basic \"打字练习系统\"; auth_basic_user_file /etc/nginx/${SVC}.htpasswd;"
       ok "整站口令：$WEB_USER / $WEB_PASS"
       ;;
     ipallow)
@@ -283,6 +290,7 @@ if [ "$NO_NGINX" != "1" ]; then
 
   sed -e "s|__WEB_PORT__|$WEB_PORT|g" \
       -e "s|__PORT__|$NODE_PORT|g" \
+      -e "s|__NGX_ID__|$NGX_ID|g" \
       -e "s|__AUTH__|$AUTH_LINE|g" \
       "$SRC/deploy/nginx-http.conf" > "/etc/nginx/conf.d/$SVC.conf"
 
@@ -375,6 +383,7 @@ if [ -n "$DOMAIN" ]; then
     ok "证书已签发"
     sed -e "s|__DOMAIN__|$DOMAIN|g" \
         -e "s|__PORT__|$NODE_PORT|g" \
+        -e "s|__NGX_ID__|$NGX_ID|g" \
         -e "s|__AUTH__|$AUTH_LINE|g" \
         "$SRC/deploy/nginx-https.conf" > "/etc/nginx/conf.d/$SVC.conf"
     nginx -t >/dev/null 2>&1 && systemctl reload nginx

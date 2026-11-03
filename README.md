@@ -152,8 +152,18 @@ node -v      # 应输出 v22.20.0
 | `PUBLIC_URL` | 自动推导 | 手动指定对外地址，影响二维码和启动横幅；默认取公网 IP + 端口 |
 | `NO_NGINX` | `0` | `1`＝不装 Nginx，Node 直接对外；无口令无限速，仅临时测试 |
 | `I_KNOW` | `0` | `1`＝跳过「源码里带数据库却装到空目录」的防呆拦截 |
+| `SVC` | `typing-trainer` | systemd 服务名，Nginx 配置文件名同此 |
+| `RUN_USER` | `typing` | 运行账号；不存在会自动创建系统账号 |
 
-服务名（`typing-trainer`）和运行账号（`typing`）是写死的，不接受传参。
+> **改 `SVC` 等于装一个新服务，不会自动迁移老服务。** 同一台机器上从默认名改成别的之前，先把老的清掉：
+>
+> ```bash
+> sudo systemctl disable --now typing-trainer
+> sudo rm -f /etc/systemd/system/typing-trainer.service /etc/nginx/conf.d/typing-trainer.conf
+> sudo systemctl daemon-reload && sudo nginx -t && sudo systemctl reload nginx
+> ```
+>
+> 一台机器装多套（比如两所学校各一套）：`SVC`、`APP_DIR`、`WEB_PORT`、`BACKEND_PORT` 都得不同。Nginx 的 upstream 和限速区名按 `SVC` 自动派生（连字符转下划线），不会互相冲突。
 
 **`deploy/pull-deploy.sh`（日常更新 / 回滚）**
 

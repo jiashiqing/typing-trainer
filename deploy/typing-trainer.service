@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=typing
-Group=typing
+User=__RUN_USER__
+Group=__RUN_USER__
 WorkingDirectory=__ROOT__
 
 # ---- 部署参数（setup.sh 会按实际情况改写下面三行）----
@@ -33,7 +33,7 @@ TimeoutStopSec=20
 
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=typing-trainer
+SyslogIdentifier=__SVC__
 
 # ---- 轻量加固 ----
 NoNewPrivileges=true
