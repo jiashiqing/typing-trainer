@@ -39,7 +39,7 @@ const START_PORT = parseInt(process.env.PORT || '8090', 10);
 const BOOT_AT = Date.now();        // 启动时刻，/api/ping 里回传，方便判断是不是"今早那个实例"
 
 /* 部署相关（默认值 = 现在的局域网用法，不设任何变量照样能跑） */
-const PUBLIC_URL = String(process.env.PUBLIC_URL || '').replace(/\/+$/, '');  // 例 https://dazi.example.com
+const PUBLIC_URL = String(process.env.PUBLIC_URL || '').replace(/\/+$/, '');  // 例 https://typing.example.com
 const BIND_HOST = String(process.env.BIND_HOST || '0.0.0.0');                  // 公网部署建议 127.0.0.1
 const CORS_ORIGIN = String(process.env.CORS_ORIGIN || '');                     // 留空 = 只允许同源
 const HIDE_CODES = process.env.HIDE_CODES === '1';                              // 日志里不打访问码

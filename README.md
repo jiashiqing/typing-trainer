@@ -34,8 +34,8 @@
 ## 快速开始（本地）
 
 ```bash
-git clone https://github.com/jiashiqing/typing-trainer.git dazi-trainer
-cd dazi-trainer
+git clone https://github.com/jiashiqing/typing-trainer.git typing-trainer
+cd typing-trainer
 node server.js
 ```
 
@@ -68,13 +68,13 @@ Windows 上也可以直接双击 `start.bat`；`查看服务状态.bat` / `停�
 
 ```bash
 # 服务器上，以 root 执行
-git clone git@github.com:jiashiqing/typing-trainer.git /data/web/dazi-trainer
-cd /data/web/dazi-trainer
+git clone git@github.com:jiashiqing/typing-trainer.git /data/web/typing-trainer
+cd /data/web/typing-trainer
 sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 ```
 
 > `APP_DIR` 写成当前目录，就是「原地部署」：不拷贝代码，数据也留在原地。
-> 服务名固定为 `typing-trainer`（`systemctl status typing-trainer`），目录名是 `dazi-trainer`，两者不同是历史原因，不影响使用。
+> 仓库名、目录名、systemd 服务名统一为 `typing-trainer`，查状态用 `systemctl status typing-trainer`。
 
 ### 日常更新
 
@@ -94,7 +94,7 @@ sudo bash deploy/pull-deploy.sh --rollback # 退一个版本
 ## 目录结构
 
 ```
-dazi-trainer/
+typing-trainer/
 ├── server.js              服务端：HTTP、SSE 推送、成绩计算、SQLite
 ├── lib/
 │   ├── store.js           SQLite 封装（node:sqlite）

@@ -127,8 +127,8 @@ git remote set-url origin https://gitee.com/你的用户名/typing-trainer.git
 ### 4.1 在服务器上生成密钥
 
 ```bash
-ssh-keygen -t ed25519 -C "deploy@dazi-trainer" -f /root/.ssh/dazi_deploy -N ""
-cat /root/.ssh/dazi_deploy.pub
+ssh-keygen -t ed25519 -C "deploy@typing-trainer" -f /root/.ssh/typing_deploy -N ""
+cat /root/.ssh/typing_deploy.pub
 ```
 
 会输出一行 `ssh-ed25519 AAAA...`，**整行复制**。
@@ -143,14 +143,14 @@ cat /root/.ssh/dazi_deploy.pub
 ```bash
 cat >> /root/.ssh/config <<'EOF'
 Host github.com
-  IdentityFile /root/.ssh/dazi_deploy
+  IdentityFile /root/.ssh/typing_deploy
   StrictHostKeyChecking accept-new
 
 Host gitee.com
-  IdentityFile /root/.ssh/dazi_deploy
+  IdentityFile /root/.ssh/typing_deploy
   StrictHostKeyChecking accept-new
 EOF
-chmod 600 /root/.ssh/config /root/.ssh/dazi_deploy
+chmod 600 /root/.ssh/config /root/.ssh/typing_deploy
 ```
 
 测试：
@@ -185,8 +185,8 @@ git remote set-url origin git@github.com:jiashiqing/typing-trainer.git
 
 ```bash
 mkdir -p /data/web && cd /data/web
-git clone git@github.com:jiashiqing/typing-trainer.git dazi-trainer
-cd dazi-trainer
+git clone git@github.com:jiashiqing/typing-trainer.git typing-trainer
+cd typing-trainer
 sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 ```
 
@@ -195,11 +195,26 @@ sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 - 私有仓库**必须先做第 4 节的 Deploy Key**，否则 clone 会要账号密码
 - 克隆下来没有 `data/` —— 第一次启动会自动建库、自动初始化学校名单，这是正常的
 - `deploy/*.sh` 的可执行位在仓库里已经设好（`100755`），clone 后 `bash deploy/setup.sh` 或 `./deploy/setup.sh` 都能跑
-- 目录名 `dazi-trainer` 沿用线上现有部署，便于对照；**服务名固定是 `typing-trainer`**（`setup.sh` 里写死），查状态用 `systemctl status typing-trainer`
+- 目录名、systemd 服务名、仓库名统一为 `typing-trainer`，查状态用 `systemctl status typing-trainer`
 
 ### 5.1 已有旧代码的老目录（从手工部署转成 git 部署）
 
-你现在的服务器目录 `/data/web/dazi-trainer` 里有代码、有数据库，但**还不是 git 仓库**。
+你现在的服务器目录 `/data/web/typing-trainer` 里有代码、有数据库，但**还不是 git 仓库**。
+
+> **如果服务器上的目录还叫 `/data/web/dazi-trainer`**（早期部署留下的名字），先改名再往下做，否则文档里的路径全都对不上：
+>
+> ```bash
+> sudo systemctl stop typing-trainer
+> sudo mv /data/web/dazi-trainer /data/web/typing-trainer
+> sudo sed -i 's#/data/web/dazi-trainer#/data/web/typing-trainer#g' \
+>     /etc/systemd/system/typing-trainer.service /etc/nginx/conf.d/*.conf
+> sudo systemctl daemon-reload
+> sudo nginx -t && sudo systemctl reload nginx
+> sudo systemctl start typing-trainer
+> systemctl status typing-trainer --no-pager | head -5
+> ```
+>
+> 数据不会丢：`mv` 是同一块盘上的改名，`data/db.sqlite` 跟着目录一起走。改完确认网页能打开再继续。
 
 ### 5.2 先把脚本传上去
 
@@ -207,13 +222,13 @@ sudo -E APP_DIR="$(pwd)" WEB_PORT=8090 bash deploy/setup.sh
 
 ```powershell
 cd D:\工作空间\WorkBuddy工作空间\AI×教师\打字练习系统-联网版
-scp deploy\pull-deploy.sh root@43.142.117.18:/data/web/dazi-trainer/deploy/
+scp deploy\pull-deploy.sh root@43.142.117.18:/data/web/typing-trainer/deploy/
 ```
 
 ### 5.3 执行关联
 
 ```bash
-cd /data/web/dazi-trainer
+cd /data/web/typing-trainer
 sudo bash deploy/pull-deploy.sh --init git@github.com:jiashiqing/typing-trainer.git
 ```
 
@@ -262,7 +277,7 @@ git push gitee main --tags        # 有镜像的话
 服务器上：
 
 ```bash
-cd /data/web/dazi-trainer
+cd /data/web/typing-trainer
 sudo bash deploy/pull-deploy.sh
 ```
 
@@ -349,8 +364,8 @@ sudo bash deploy/pull-deploy.sh --rollback a1b2c3d
 
 ```bash
 sudo systemctl stop typing-trainer
-sudo cp /data/backup/db-2026-11-03-164512-predeploy.sqlite /data/web/dazi-trainer/data/db.sqlite
-sudo rm -f /data/web/dazi-trainer/data/db.sqlite-wal /data/web/dazi-trainer/data/db.sqlite-shm
+sudo cp /data/backup/db-2026-11-03-164512-predeploy.sqlite /data/web/typing-trainer/data/db.sqlite
+sudo rm -f /data/web/typing-trainer/data/db.sqlite-wal /data/web/typing-trainer/data/db.sqlite-shm
 sudo systemctl start typing-trainer
 ```
 
@@ -385,7 +400,7 @@ sudo systemctl start typing-trainer
 | 部署完页面没变 | 浏览器缓存了老 JS | `Ctrl + F5` 强刷 |
 | `--rollback` 报「没有可回退的目标」 | 部署历史里只有当前这一个版本 | 用 `--rollback <sha>` 指定 |
 | 回滚后还是打不开 | 问题不在代码（Nginx/端口/防火墙） | `journalctl -u 服务名 -n 50`，再按 `MANUAL.md` 的三层验证查 |
-| 依赖装不上 | 网络或 npm 源问题 | `cd /data/web/dazi-trainer && npm install --omit=dev` 手动看报错 |
+| 依赖装不上 | 网络或 npm 源问题 | `cd /data/web/typing-trainer && npm install --omit=dev` 手动看报错 |
 
 ---
 
@@ -400,8 +415,8 @@ git push -u origin main --tags
 
 # ② 全新服务器：先 clone（私有仓库要先配第 4 节的 Deploy Key）
 mkdir -p /data/web && cd /data/web
-git clone git@github.com:jiashiqing/typing-trainer.git dazi-trainer
-cd dazi-trainer
+git clone git@github.com:jiashiqing/typing-trainer.git typing-trainer
+cd typing-trainer
 
 # ③ 首次部署（装 Node、建账号、写 systemd、配 Nginx、开端口）
 #    原地部署：APP_DIR 设为当前目录，不拷贝、不动 data/

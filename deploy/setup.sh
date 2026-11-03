@@ -5,9 +5,9 @@
 # ---------------------------------------------------------------------
 #  用法（在项目根目录执行）：
 #    sudo bash deploy/setup.sh                           # 装到 /opt，对外 80
-#    sudo bash deploy/setup.sh dazi.example.com          # 有域名，自动 HTTPS
+#    sudo bash deploy/setup.sh typing.example.com          # 有域名，自动 HTTPS
 #    sudo -E WEB_PORT=8090 bash deploy/setup.sh          # 对外 8090
-#    sudo -E APP_DIR=/data/web/dazi-trainer WEB_PORT=8090 bash deploy/setup.sh
+#    sudo -E APP_DIR=/data/web/typing-trainer WEB_PORT=8090 bash deploy/setup.sh
 #
 #  可选环境变量（sudo 下请加 -E 传递）：
 #    APP_DIR      安装目录，默认 /opt/typing-trainer
