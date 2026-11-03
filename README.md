@@ -23,7 +23,7 @@
 
 ## 环境要求
 
-- **Node.js ≥ 22.5**（用到内置的 `node:sqlite`，22.5 才进标准库）
+- **Node.js ≥ 22.13**（用到内置的 `node:sqlite`；22.5–22.12 也能跑，但启动要加 `--experimental-sqlite`）
 - 浏览器：Chrome / Edge / 任何现代浏览器
 - 服务器部署：Ubuntu 20.04+ / Debian 11+ / Rocky 8+（glibc ≥ 2.28）
 

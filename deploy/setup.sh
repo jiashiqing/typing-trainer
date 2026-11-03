@@ -120,13 +120,13 @@ if command -v node >/dev/null 2>&1; then
   MIN="${REST%%.*}"
   if [ "$MAJ" -gt 22 ] 2>/dev/null; then
     need_node=0
-  elif [ "$MAJ" -eq 22 ] 2>/dev/null && [ "$MIN" -ge 5 ] 2>/dev/null; then
+  elif [ "$MAJ" -eq 22 ] 2>/dev/null && [ "$MIN" -ge 13 ] 2>/dev/null; then
     need_node=0
   fi
   if [ "$need_node" -eq 0 ]; then
-    ok "已装 Node $NV（满足 22.5+）"
+    ok "已装 Node $NV（满足 22.13+）"
   else
-    warn "现有 Node $NV 太旧（需要 22.5+），将安装 22.x"
+    warn "现有 Node $NV 太旧（需要 22.13+，22.5–22.12 的 node:sqlite 还带实验标志），将安装 22.x"
   fi
 fi
 
@@ -149,7 +149,7 @@ NODE_BIN="$(command -v node)"
 ok "node 路径：$NODE_BIN"
 
 if ! "$NODE_BIN" -e "require('node:sqlite')" >/dev/null 2>&1; then
-  die "这个 Node 加载不了内置 node:sqlite（通常是 glibc 太旧）。请换 Ubuntu 20.04+ / Rocky 8+，CentOS 7 不支持"
+  die "当前 Node $NV 加载不了内置 node:sqlite。需要 Node ≥ 22.13（22.5–22.12 还得加 --experimental-sqlite 标志），或者 glibc 太旧（CentOS 7 不支持）。换 Ubuntu 20.04+ / Debian 11+ / Rocky 8+ 并装 Node 22.13+"
 fi
 ok "node:sqlite 可用"
 
