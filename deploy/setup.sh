@@ -193,6 +193,7 @@ else
   tar -C "$SRC" -cf - \
     --exclude='./data' --exclude='./deploy' --exclude='./.git' \
     --exclude='./node_modules' --exclude='./_edgetmp*' \
+    --exclude='./_backup_*' --exclude='./.deploy' \
     --exclude='./预览截图' --exclude='./__pycache__' . 2>/dev/null \
     | tar -C "$APP_DIR" -xf -
 fi
