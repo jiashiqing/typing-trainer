@@ -706,14 +706,21 @@
     }).join('\n');
     /* 练习文本库 */
     paintMaterials();
-    /* 入口地址：服务端配了 PUBLIC_URL 就听它的；没配就用老师当前访问的地址
-       （同协议、同主机、同端口）。云服务器上服务端猜的网卡 IP 常是 172.17.x
-       这类内网地址，学生根本连不上 —— 浏览器地址栏反而是唯一一定正确的。 */
+    /* 入口地址：只有一个判断标准 —— 学生手机能不能打开。
+       服务端给的 publicBase 不一定可信：部署脚本可能把 PUBLIC_URL 猜成 172.17.x
+       这类内网地址（云服务器上 hostname -I 给的就是内网）。
+       所以：publicBase 是私网、而老师当前地址栏是公网 → 忽略 publicBase，用地址栏。
+       两处都私网（局域网部署）时仍听 publicBase，域名/固定 IP 优先。 */
     if (T.net) {
-      var origin = location.origin + '/';
-      var sUrl = T.net.publicBase ? T.net.studentUrl : origin;
-      var tUrl = T.net.publicBase ? T.net.teacherUrl : origin + 'teacher';
-      var cUrl = T.net.publicBase ? T.net.screenUrl : origin + 'screen';
+      var PV = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/;
+      var base = String(T.net.publicBase || '');
+      var bh = (base.match(/^[a-z]+:\/\/([^\/:]+)/i) || [])[1] || '';
+      var hereLocal = PV.test(location.hostname) || location.hostname === 'localhost';
+      if (!base || (PV.test(bh) && !hereLocal)) base = location.origin;
+      base = base.replace(/\/+$/, '');
+      var sUrl = base + '/';
+      var tUrl = base + '/teacher';
+      var cUrl = base + '/screen';
       $('mg-url').textContent = sUrl;
       $('mg-links').innerHTML =
         '<div>教师端 <b>' + esc(tUrl) + '</b></div>' +

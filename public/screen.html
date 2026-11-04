@@ -453,14 +453,19 @@ body{
     if (d.keys) S.keys = d.keys;
     if (d.net) {
       S.net = d.net;
-      /* 服务端没配 PUBLIC_URL 时给的是网卡 IP（云服务器上常是 172.17.x 内网），
-         学生连不上。大屏本身就是浏览器打开的，用地址栏的 origin 才不会错。 */
-      if (!d.net.publicBase) {
-        var o = location.origin + '/';
-        S.net.studentUrl = o;
-        S.net.teacherUrl = o + 'teacher';
-        S.net.screenUrl = o + 'screen';
-      }
+      /* 二维码里的地址必须是大屏这台机器"看得见"的地址。
+         服务端给的 publicBase 若被部署脚本猜成 172.17.x 内网 IP，
+         而大屏是通过公网地址打开的，就丢掉它、改用地址栏的 origin。
+         （这段判断必须和 teacher.js 保持一致，两边算法一样） */
+      var PV = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/;
+      var base = String(d.net.publicBase || '');
+      var bh = (base.match(/^[a-z]+:\/\/([^\/:]+)/i) || [])[1] || '';
+      var hereLocal = PV.test(location.hostname) || location.hostname === 'localhost';
+      if (!base || (PV.test(bh) && !hereLocal)) base = location.origin;
+      base = base.replace(/\/+$/, '');
+      S.net.studentUrl = base + '/';
+      S.net.teacherUrl = base + '/teacher';
+      S.net.screenUrl = base + '/screen';
     }
     if (d.schools) S.schools = d.schools;
     if (d.accGate) S.accGate = d.accGate;

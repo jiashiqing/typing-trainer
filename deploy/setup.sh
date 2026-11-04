@@ -54,6 +54,31 @@ ok()   { echo -e "  ${c_ok}✓${c_0} $*"; }
 warn() { echo -e "  ${c_warn}!${c_0} $*"; }
 die()  { echo -e "  ${c_err}✗ $*${c_0}"; exit 1; }
 
+# 取这台机器的公网 IPv4：多个来源依次试，只接受真正的公网地址。
+# 绝对不要退回 `hostname -I` —— 云服务器上它给的是 172.17.x / 10.x 这类内网地址，
+# 一旦写进 PUBLIC_URL，教师端二维码和"学生入口"就永久指向学生连不上的地址，
+# 而且重跑脚本也改不回来（每次都是错的）。拿不到就留空，交给服务端按访问者地址推导。
+detect_public_ip() {
+  local u ip
+  for u in \
+    "https://api.ipify.org" \
+    "https://ifconfig.me/ip" \
+    "http://100.100.100.200/latest/meta-data/eipv4" \
+    "http://metadata.tencentyun.com/latest/meta-data/public-ipv4" \
+    "http://169.254.169.254/latest/meta-data/public-ipv4"
+  do
+    ip="$(curl -fsS --max-time 3 "$u" 2>/dev/null | tr -d '[:space:]' || true)"
+    case "$ip" in ''|*[!0-9.]*) continue ;; esac
+    case "$ip" in
+      127.*|10.*|192.168.*|169.254.*) continue ;;
+      172.1[6-9].*|172.2[0-9].*|172.3[01].*) continue ;;
+    esac
+    printf '%s' "$ip"
+    return 0
+  done
+  return 1
+}
+
 # ---------------------------------------------------------------- 参数校验
 [ "$(id -u)" -eq 0 ] || die "请用 root 执行：sudo bash deploy/setup.sh"
 [ -f "$SRC/server.js" ] || die "没找到 server.js，请在项目根目录执行本脚本"
@@ -220,20 +245,25 @@ if [ -z "$PUBLIC_URL" ]; then
   if [ -n "$DOMAIN" ]; then
     PUBLIC_URL="http://$DOMAIN"
   else
-    PUB_IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || true)"
-    if [ -z "$PUB_IP" ]; then
-      PUB_IP="$(hostname -I 2>/dev/null | cut -d' ' -f1 || true)"
-    fi
-    [ -n "$PUB_IP" ] || PUB_IP="127.0.0.1"
-    if [ "$WEB_PORT" = "80" ]; then
-      PUBLIC_URL="http://$PUB_IP"
-    else
-      PUBLIC_URL="http://$PUB_IP:$WEB_PORT"
+    PUB_IP="$(detect_public_ip || true)"
+    if [ -n "$PUB_IP" ]; then
+      if [ "$WEB_PORT" = "80" ]; then
+        PUBLIC_URL="http://$PUB_IP"
+      else
+        PUBLIC_URL="http://$PUB_IP:$WEB_PORT"
+      fi
     fi
   fi
 fi
-ok "PUBLIC_URL = $PUBLIC_URL"
-[ -z "$DOMAIN" ] && warn "二维码和启动横幅使用这个地址；学生从校外访问时，它必须是公网 IP"
+if [ -n "$PUBLIC_URL" ]; then
+  ok "PUBLIC_URL = $PUBLIC_URL"
+  [ -z "$DOMAIN" ] && warn "二维码和启动横幅使用这个地址；学生从校外访问时，它必须是公网 IP"
+else
+  ok "PUBLIC_URL 留空 —— 服务端按访问者实际的地址自动推导"
+  warn "没查到这台机器的公网 IP（api.ipify.org / 云元数据都试过了，国内常连不上）"
+  warn "留空比写死内网 IP 安全：浏览器地址栏是什么，学生二维码就是什么"
+  warn "以后配了域名，重跑本脚本并带域名参数：bash deploy/setup.sh app.example.com"
+fi
 
 # ---------------------------------------------------------------- systemd
 step "写入 systemd 服务"
@@ -408,9 +438,14 @@ echo ""
 echo -e "\033[32m$LINE\033[0m"
 echo -e "\033[32m   部署完成\033[0m"
 echo -e "\033[32m$LINE\033[0m"
-echo "  学生端：   $PUBLIC_URL/"
-echo "  教师端：   $PUBLIC_URL/teacher"
-echo "  大屏看板： $PUBLIC_URL/screen"
+if [ -n "$PUBLIC_URL" ]; then
+  echo "  学生端：   $PUBLIC_URL/"
+  echo "  教师端：   $PUBLIC_URL/teacher"
+  echo "  大屏看板： $PUBLIC_URL/screen"
+else
+  echo "  访问地址： http://<这台机器的公网IP>:$WEB_PORT/"
+  echo "            （对外地址未写死；打开教师端页面即显示准确的【学生入口地址】与二维码）"
+fi
 echo ""
 if [ "$MODE" = "basic" ] && [ "$NO_NGINX" != "1" ]; then
   echo "  网页口令： $WEB_USER / $WEB_PASS   （先输这个，再输教师访问码）"

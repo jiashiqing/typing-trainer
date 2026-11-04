@@ -497,7 +497,7 @@ function liveSig(r) {
 }
 const liveSigMap = new Map();
 
-function snapshot() {
+function snapshot(req) {
   return {
     updatedAt: db.updatedAt,
     serverTime: nowISO(),
@@ -520,7 +520,10 @@ function snapshot() {
         online: onlineCount()
       };
     })(),
-    net: netInfo()
+    /* 没有 req 就别塞 net：否则 reset 广播会把"服务端猜的网卡 IP"重新推给
+       已经连对了地址的大屏/教师端，二维码当场退回内网地址。
+       客户端看到 d.net 为空会保留自己已经算好的那套地址。 */
+    net: req ? netInfo(req) : null
   };
 }
 
@@ -621,7 +624,47 @@ function readBody(req) {
   });
 }
 
-function netInfo() {
+/* ---------------------------------------------------------------- 地址推导
+   云服务器的「网卡 IP」几乎总是内网地址（10./172.16-31./192.168.），
+   把它当公网地址发给学生，手机必然打不开。所以优先级改成：
+     1) PUBLIC_URL（部署时明确配的公网域名/地址）——但它自己就是内网地址时视为没配
+     2) 访问者实际用的 Host（浏览器地址栏里的那个，一定连得通）
+     3) 网卡 IP（只在本机 / 局域网直连时才有意义）
+   这是上一版"只用网卡 IP"和"PUBLIC_URL 无条件优先"两个坑的合并修法。 */
+function isLocalHost(h) {
+  if (!h) return true;
+  const s = String(h).toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+  if (!s) return true;
+  if (s === 'localhost' || s === '::1' || s === '0.0.0.0') return true;
+  return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(s);
+}
+
+function hostOf(u) {
+  if (!u) return '';
+  try { return new URL(u).hostname; } catch (e) { return ''; }
+}
+
+/* 回环地址：只有"这台机器自己"能访问，拿它做二维码学生必扫不开 */
+function isLoopbackHost(h) {
+  if (!h) return true;
+  const s = String(h).toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+  if (!s) return true;
+  if (s === 'localhost' || s === '::1' || s === '0.0.0.0') return true;
+  return /^127\./.test(s);
+}
+
+/* 访问者实际用的基地址。Host 头里已经带了端口，直接用；
+   反代场景看 X-Forwarded-Proto，否则 443 会被写成 http:// */
+function reqBase(req) {
+  if (!req || !req.headers || !req.headers.host) return '';
+  const xf = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const proto = (xf === 'https' || xf === 'http')
+    ? xf
+    : ((req.socket && req.socket.encrypted) ? 'https' : 'http');
+  return proto + '://' + req.headers.host;
+}
+
+function netInfo(req) {
   const list = [];
   const ifs = os.networkInterfaces();
   for (const name of Object.keys(ifs)) {
@@ -639,14 +682,35 @@ function netInfo() {
   list.sort((a, b) => score(a.address) - score(b.address));
   const port = server && server.address() ? server.address().port : START_PORT;
   const primary = list.length ? list[0].address : 'localhost';
-  /* 部署在公网上时，二维码和提示必须指向公网域名 —— 局域网的 192.168.x.x
-     学生手机扫了打不开。设 PUBLIC_URL 就整体切过去。 */
-  const base = PUBLIC_URL || ('http://' + primary + ':' + port);
+
+  const fromReq = reqBase(req);
+  const pubHost = hostOf(PUBLIC_URL);
+  const reqHost = hostOf(fromReq);
+  let base;
+  if (PUBLIC_URL && !isLocalHost(pubHost)) {
+    /* 配的是公网域名 / 公网 IP —— 最权威，直接用它 */
+    base = PUBLIC_URL;
+  } else if (fromReq && !isLoopbackHost(reqHost)) {
+    /* 用访问者实际用的地址（公网 IP 或局域网 IP 都算）。
+       云服务器上 PUBLIC_URL 常被部署脚本猜成 172.17.x 这类内网地址，
+       这一支就是它的解药：浏览器地址栏永远比服务端猜的准。 */
+    base = fromReq;
+  } else if (PUBLIC_URL && isLocalHost(pubHost)) {
+    /* 从本机回环访问、且只配了内网地址 —— 至少比 localhost 强 */
+    base = PUBLIC_URL;
+  } else {
+    /* 从本机回环访问、什么都没配 —— 退回网卡地址，二维码才扫得开 */
+    base = 'http://' + primary + ':' + port;
+  }
+
+  /* publicBase 只放「不是回环」的地址：前端看到空值就改用 location.origin。
+     这样即使部署时把 PUBLIC_URL 猜成了内网 IP，学生拿到的二维码依然是对的。 */
+  const usable = !isLoopbackHost(hostOf(base));
   return {
     port: port,
     ips: list,
     primary: primary,
-    publicBase: PUBLIC_URL || '',
+    publicBase: usable ? base : '',
     studentUrl: base + '/',
     teacherUrl: base + '/teacher',
     screenUrl: base + '/screen'
@@ -765,7 +829,7 @@ async function handleAPI(req, res, url) {
   }
 
   /* --- 全量状态 --- */
-  if (p === '/api/state' && method === 'GET') return sendJSON(res, snapshot());
+  if (p === '/api/state' && method === 'GET') return sendJSON(res, snapshot(req));
 
   /* --- 实时推送 --- */
   if (p === '/api/stream' && method === 'GET') {
@@ -777,13 +841,13 @@ async function handleAPI(req, res, url) {
     });
     res.write('retry: 2000\n\n');
     clients.add(res);
-    writeEvent(res, 'init', snapshot());
+    writeEvent(res, 'init', snapshot(req));
     req.on('close', () => clients.delete(res));
     req.on('error', () => clients.delete(res));
     return;
   }
 
-  if (p === '/api/netinfo' && method === 'GET') return sendJSON(res, netInfo());
+  if (p === '/api/netinfo' && method === 'GET') return sendJSON(res, netInfo(req));
 
   /* --- 登录：凭访问码换令牌 --- */
   if (p === '/api/auth' && method === 'POST') {
@@ -815,7 +879,7 @@ async function handleAPI(req, res, url) {
 
   /* --- 二维码 --- */
   if (p === '/api/qr' && method === 'GET') {
-    const text = url.searchParams.get('text') || netInfo().studentUrl;
+    const text = url.searchParams.get('text') || netInfo(req).studentUrl;
     const ecc = (url.searchParams.get('ecc') || 'M').toUpperCase();
     try {
       const q = QR.encode(text, ecc);
